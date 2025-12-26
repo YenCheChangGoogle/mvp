@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Element;import page2020.view.Text;public class H5summary extends Element<H5summary, Text> {	public H5summary() {		super("summary");	}}

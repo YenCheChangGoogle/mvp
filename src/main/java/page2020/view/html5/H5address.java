@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Element;import page2020.view.Text;public class H5address extends Element<H5address, Text> {	public H5address() {		super("address");	}}

@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Content;import page2020.view.Element;public class H5figure extends Element<H5figure, Content<?>> {	public H5figure() {		super("figure");	}	}

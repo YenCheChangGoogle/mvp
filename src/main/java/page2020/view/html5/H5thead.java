@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Element;public class H5thead extends Element<H5thead, H5tr> {	public H5thead() {		super("thead");	}}

@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Content;import page2020.view.Element;public class H5section extends Element<H5section, Content<?>> {	public H5section() {		super("section");	}}

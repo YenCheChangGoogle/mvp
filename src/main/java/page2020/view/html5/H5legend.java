@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Content;import page2020.view.Element;public class H5legend extends Element<H5legend, Content<?>> {	public H5legend() {		super("legend");	}}

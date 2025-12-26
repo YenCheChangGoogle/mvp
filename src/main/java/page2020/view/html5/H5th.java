@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;public class H5th extends H5td {	public H5th() {		super.setTagName("th");	}}

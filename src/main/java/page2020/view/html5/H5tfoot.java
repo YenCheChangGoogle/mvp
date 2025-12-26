@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Element;public class H5tfoot extends Element<H5tfoot, H5tr> {	public H5tfoot() {		super("tfoot");	}}

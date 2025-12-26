@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.bs4;public class B4element extends B4box<B4element> {	public B4element() {		super("div");	}	public B4element(String tagName) {		super(tagName);	}}

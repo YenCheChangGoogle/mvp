@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Tag;public class H5wbr extends Tag<H5wbr> {	public H5wbr() {		super("wbr");	}}

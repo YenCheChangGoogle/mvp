@@ -1,0 +1,1 @@
+/* @author MILO-GAO(高振銘)@2020 */ package page2020.view.html5;import page2020.view.Tag;public class H5hr extends Tag<H5hr> {	public H5hr() {		super("hr");	}}

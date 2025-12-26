@@ -1,0 +1,459 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=unicode">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<meta name=Originator content="Microsoft Word 15">
+<link rel=File-List href="RE%20初稿.files/filelist.xml">
+<link rel=Edit-Time-Data href="RE%20初稿.files/editdata.mso">
+<!--[if !mso]>
+<style>
+v\:* {behavior:url(#default#VML);}
+o\:* {behavior:url(#default#VML);}
+w\:* {behavior:url(#default#VML);}
+.shape {behavior:url(#default#VML);}
+</style>
+<![endif]--><!--[if gte mso 9]><xml>
+ <o:OfficeDocumentSettings>
+  <o:AllowPNG/>
+ </o:OfficeDocumentSettings>
+</xml><![endif]-->
+
+<link rel=themeData href="RE%20初稿.files/themedata.thmx">
+<link rel=colorSchemeMapping href="RE%20初稿.files/colorschememapping.xml">
+
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:新細明體;
+	panose-1:2 2 5 0 0 0 0 0 0 0;
+	mso-font-alt:PMingLiU;
+	mso-font-charset:136;
+	mso-generic-font-family:roman;
+	mso-font-pitch:variable;
+	mso-font-signature:-1610611969 684719354 22 0 1048577 0;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;
+	mso-font-charset:1;
+	mso-generic-font-family:roman;
+	mso-font-pitch:variable;
+	mso-font-signature:-536869121 1107305727 33554432 0 415 0;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:swiss;
+	mso-font-pitch:variable;
+	mso-font-signature:-469750017 -1073732485 9 0 511 0;}
+@font-face
+	{font-family:微軟正黑體;
+	panose-1:2 11 6 4 3 5 4 4 2 4;
+	mso-font-charset:136;
+	mso-generic-font-family:swiss;
+	mso-font-pitch:variable;
+	mso-font-signature:679 684672000 22 0 1048585 0;}
+@font-face
+	{font-family:"\@微軟正黑體";
+	mso-font-charset:136;
+	mso-generic-font-family:swiss;
+	mso-font-pitch:variable;
+	mso-font-signature:679 684672000 22 0 1048585 0;}
+@font-face
+	{font-family:"\@新細明體";
+	panose-1:2 1 6 1 0 1 1 1 1 1;
+	mso-font-charset:136;
+	mso-generic-font-family:roman;
+	mso-font-pitch:variable;
+	mso-font-signature:-1610611969 684719354 22 0 1048577 0;}
+@font-face
+	{font-family:標楷體;
+	panose-1:3 0 5 9 0 0 0 0 0 0;
+	mso-font-charset:136;
+	mso-generic-font-family:script;
+	mso-font-pitch:fixed;
+	mso-font-signature:3 135135232 22 0 1048577 0;}
+@font-face
+	{font-family:"\@標楷體";
+	mso-font-charset:136;
+	mso-generic-font-family:script;
+	mso-font-pitch:fixed;
+	mso-font-signature:3 135135232 22 0 1048577 0;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"新細明體",serif;
+	mso-bidi-font-family:新細明體;}
+a:link, span.MsoHyperlink
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	color:purple;
+	text-decoration:underline;
+	text-underline:single;}
+p.msonormal0, li.msonormal0, div.msonormal0
+	{mso-style-name:msonormal;
+	mso-style-unhide:no;
+	mso-margin-top-alt:auto;
+	margin-right:0cm;
+	mso-margin-bottom-alt:auto;
+	margin-left:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"新細明體",serif;
+	mso-bidi-font-family:新細明體;}
+span.EmailStyle18
+	{mso-style-type:personal-reply;
+	mso-style-noshow:yes;
+	mso-style-unhide:no;
+	mso-ansi-font-size:16.0pt;
+	mso-bidi-font-size:11.0pt;
+	font-family:標楷體;
+	mso-ascii-font-family:標楷體;
+	mso-fareast-font-family:標楷體;
+	mso-hansi-font-family:標楷體;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:#1F497D;}
+.MsoChpDefault
+	{mso-style-type:export-only;
+	mso-default-props:yes;
+	font-size:10.0pt;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Calibri",sans-serif;
+	mso-ascii-font-family:Calibri;
+	mso-fareast-font-family:"Times New Roman";
+	mso-hansi-font-family:Calibri;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-font-kerning:0pt;}
+@page WordSection1
+	{size:612.0pt 792.0pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:36.0pt;
+	mso-footer-margin:36.0pt;
+	mso-paper-source:0;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+
+</head>
+
+<body lang=ZH-TW link=blue vlink=purple style='tab-interval:24.0pt'>
+
+<div class=WordSection1>
+
+
+<p class=MsoNormal><span lang=EN-US><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-US style='font-size:16.0pt;mso-bidi-font-size:
+11.0pt;font-family:標楷體;mso-bidi-font-family:"Times New Roman";mso-bidi-theme-font:
+minor-bidi;color:#1F497D'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-US style='font-size:16.0pt;mso-bidi-font-size:
+11.0pt;font-family:標楷體;mso-bidi-font-family:"Times New Roman";mso-bidi-theme-font:
+minor-bidi;color:#1F497D'><o:p>&nbsp;</o:p></span></p>
+
+
+<blockquote style='border:none;border-left:solid #CCCCCC 1.0pt;mso-border-left-alt:
+solid #CCCCCC .75pt;padding:0cm 0cm 0cm 6.0pt;margin-left:4.8pt;margin-top:
+5.0pt;margin-right:0cm;margin-bottom:5.0pt'>
+
+<div>
+
+<div align=center>
+
+<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=0
+ style='width:600.0pt;mso-cellspacing:0cm;mso-yfti-tbllook:1184;mso-padding-alt:
+ 0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;display:table;list-style-position:
+ outside'>
+ <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes;border-spacing:0.0px 0.0px;
+  display:table-row;list-style-position:outside'>
+  <td colspan=3 valign=bottom style='padding:0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;
+  display:table-cell;list-style-position:outside'>
+  <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt;mso-no-proof:yes'><img border=0
+  width=800 height=63 id="_x0000_i1032"
+  src="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/head.gif"
+  alt="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/head.gif"></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+ <tr style='mso-yfti-irow:1;height:60.0pt;border-spacing:0.0px 0.0px;
+  display:table-row;list-style-position:outside'>
+  <td rowspan=3 valign=top style='background:#BBE5F5;padding:0cm 0cm 0cm 0cm;
+  height:60.0pt;border-spacing:0.0px 0.0px;display:table-cell;list-style-position:
+  outside'>
+  <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt;mso-no-proof:yes'><img border=0
+  width=22 height=275 id="_x0000_i1031"
+  src="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_02.gif"
+  alt="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_02.gif"></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+  <td valign=top style='background:white;padding:0cm 0cm 0cm 0cm;height:60.0pt;
+  border-spacing:0.0px 0.0px;display:table-cell;list-style-position:outside'>
+  <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt;mso-no-proof:yes'><img border=0
+  width=753 height=80 id="_x0000_i1030"
+  src="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_01.gif"
+  alt="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_01.gif"></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+  <td rowspan=3 valign=top style='background:#BBE5F5;padding:0cm 0cm 0cm 0cm;
+  height:60.0pt;border-spacing:0.0px 0.0px;display:table-cell;list-style-position:
+  outside'>
+  <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt;mso-no-proof:yes'><img border=0
+  width=25 height=232 id="_x0000_i1029"
+  src="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_03.gif"
+  alt="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_03.gif"></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+ <tr style='mso-yfti-irow:2;border-spacing:0.0px 0.0px;display:table-row;
+  list-style-position:outside'>
+  <span style='mso-bookmark:_MailOriginal'></span>
+  <td valign=top style='background:white;padding:0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;
+  display:table-cell;list-style-position:outside'>
+  <table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width="100%"
+   style='width:100.0%;mso-cellspacing:0cm;mso-yfti-tbllook:1184;mso-padding-alt:
+   0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;display:table;list-style-position:
+   outside'>
+   <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes;mso-yfti-lastrow:yes;
+    border-spacing:0.0px 0.0px;display:table-row;list-style-position:outside'>
+    <td valign=top style='border:solid white 6.0pt;
+    padding:0 1rem ;border-spacing:0.0px 0.0px;display:table;
+    list-style-position:outside;width:92%'>
+    
+    <p class=MsoNormal>
+    <span style='mso-bookmark:_MailOriginal'>
+    <span style="mso-ascii-font-family:Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:
+    Arial;color:#333333;mso-font-kerning:1.0pt;font-family:Arial">
+    親愛的客戶，您好：<br>Dear Customers,
+    </span></span></p>
+    <br>
+    
+    <p class=MsoNormal>
+    <span style='mso-bookmark:_MailOriginal'>
+    <span style="mso-ascii-font-family:Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:
+    Arial;color:#333333;mso-font-kerning:1.0pt;font-family:Arial">
+    再次竭誠感謝您的回覆！<br>Thanks again for your reply.
+    </span></span></p>
+    <br>
+    
+    <p class=MsoNormal>
+    <span style='mso-bookmark:_MailOriginal'>
+    <span style="mso-ascii-font-family:Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:
+    Arial;color:#333333;mso-font-kerning:1.0pt;font-family:Arial">
+    敬祝 <span> </span> 一切順心！<br>May you have a nice day !
+    </span></span></p>
+    <br>
+    
+    <div style="height: 3.5rem;font-family:Arial"><span style="float: right">
+    台北富邦商業銀行 <span> </span> 敬上<br>
+    Yours Faithfully,<br>
+    Taipei Fubon Bank
+    </span></div>
+    
+    <span style='mso-bookmark:_MailOriginal'><span
+    style='mso-ascii-font-family:Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:
+    Arial;color:#333333;mso-font-kerning:1.0pt'></span>
+    
+    <span 
+    style='mso-bookmark:_MailOriginal'><span style='font-family:"Arial",sans-serif;
+    color:#333333;mso-font-kerning:1.0pt'> <span lang=EN-US><o:p></o:p></span></span></span></p>
+    <p class=MsoNormal align=right style='text-align:right'><span
+    style='mso-bookmark:_MailOriginal'>
+    
+    <span style='mso-ascii-font-family:Arial;
+    mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#333333;
+    mso-font-kerning:1.0pt'></span></span><span style='mso-bookmark:_MailOriginal'><span
+    style='font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt'>
+    </span></span><span style='mso-bookmark:_MailOriginal'><span
+    style='mso-ascii-font-family:Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:
+    Arial;color:#333333;mso-font-kerning:1.0pt'></span></span><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:
+    "Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+    </td>    
+   </tr>
+  </table>
+  <span style='mso-bookmark:_MailOriginal'></span></td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+ <tr style='mso-yfti-irow:3;height:29.25pt;border-spacing:0.0px 0.0px;
+  display:table-row;list-style-position:outside'>
+  <span style='mso-bookmark:_MailOriginal'></span>
+  <td valign=bottom style='background:#BBE5F5;padding:0cm 0cm 0cm 0cm;
+  height:29.25pt;border-spacing:0.0px 0.0px;display:table-cell;list-style-position:
+  outside'>
+  <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt;mso-no-proof:yes'><img border=0
+  width=753 height=39 id="_x0000_i1028"
+  src="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_04.gif"
+  alt="https://ebank.taipeifubon.com.tw/B2C/edm/inc/img/edm_04.gif"></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-family:"Arial",sans-serif;
+  color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+ <tr style='mso-yfti-irow:4;border-spacing:0.0px 0.0px;display:table-row;
+  list-style-position:outside'>
+  <td colspan=3 valign=bottom style='background:#BBE5F5;padding:0cm 0cm 0cm 0cm;
+  border-spacing:0.0px 0.0px;display:table-cell;list-style-position:outside'>
+  <p class=MsoNormal style='line-height:18.0pt;background:#BBE5F5'><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;mso-ascii-font-family:
+  Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#515151;
+  mso-font-kerning:1.0pt'></span></span><span style='mso-bookmark:
+  _MailOriginal'><span lang=EN-US style='font-size:7.5pt;font-family:"Arial",sans-serif;
+  color:#515151;mso-font-kerning:1.0pt'> <br>
+  </span></span><span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;font-family:"微軟正黑體",sans-serif;mso-bidi-font-family:
+  微軟正黑體;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'> </span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;mso-ascii-font-family:
+  Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#515151;
+  mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'> </span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "微軟正黑體",sans-serif;mso-bidi-font-family:微軟正黑體;color:#515151;mso-font-kerning:
+  1.0pt'></span></span><span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;font-family:"Arial",sans-serif;color:#515151;
+  mso-font-kerning:1.0pt'> </span></span><span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;mso-ascii-font-family:Arial;mso-hansi-font-family:
+  Arial;mso-bidi-font-family:Arial;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:7.5pt;
+  font-family:"Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;mso-ascii-font-family:
+  Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#515151;
+  mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:7.5pt;
+  font-family:"Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;mso-ascii-font-family:
+  Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#515151;
+  mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'> </span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "微軟正黑體",sans-serif;mso-bidi-font-family:微軟正黑體;color:#515151;mso-font-kerning:
+  1.0pt'></span></span><span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;font-family:"Arial",sans-serif;color:#515151;
+  mso-font-kerning:1.0pt'> </span></span><span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;mso-ascii-font-family:Arial;mso-hansi-font-family:
+  Arial;mso-bidi-font-family:Arial;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;font-family:
+  "Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'> </span></span>
+  
+  <span style='mso-bookmark:_MailOriginal'><span
+  style='font-size:7.5pt;mso-ascii-font-family:Arial;mso-hansi-font-family:
+  Arial;mso-bidi-font-family:Arial;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:7.5pt;
+  font-family:"Arial",sans-serif;color:#515151;mso-font-kerning:1.0pt'></span></span><span
+  style='mso-bookmark:_MailOriginal'><span style='font-size:7.5pt;mso-ascii-font-family:
+  Arial;mso-hansi-font-family:Arial;mso-bidi-font-family:Arial;color:#515151;
+  mso-font-kerning:1.0pt'></span></span><span style='mso-bookmark:
+  _MailOriginal'><span style='font-size:7.5pt;font-family:"Arial",sans-serif;
+  color:#515151;mso-font-kerning:1.0pt'> <span lang=EN-US><o:p></o:p></span></span></span></p>
+  </td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+ <tr style='mso-yfti-irow:5;mso-yfti-lastrow:yes;border-spacing:0.0px 0.0px;
+  display:table-row;list-style-position:outside'>
+  <td colspan=3 valign=bottom style='padding:0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;
+  display:table-cell;list-style-position:outside'>
+  <table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width="100%"
+   style='width:100.0%;mso-cellspacing:0cm;background:#0088BE;mso-yfti-tbllook:
+   1184;mso-padding-alt:0cm 0cm 0cm 0cm;border-spacing:0.0px 0.0px;display:
+   table;background-position-x:0%;background-position-y:0%;list-style-position:
+   outside'>
+   <tr style='mso-yfti-irow:0;mso-yfti-firstrow:yes;mso-yfti-lastrow:yes;
+    height:22.5pt;border-spacing:0.0px 0.0px;display:table-cell;list-style-position:
+    outside'>
+    <td width=13 valign=bottom style='width:9.75pt;padding:0cm 0cm 0cm 0cm;
+    height:22.5pt;border-spacing:0.0px 0.0px;display:table;background-position-x:0%;
+    background-position-y:0%;list-style-position:outside'>
+    <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt;
+    mso-no-proof:yes'></span></span><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+    </td>
+    <span style='mso-bookmark:_MailOriginal'></span>
+    <td valign=bottom style='padding:0cm 0cm 0cm 0cm;height:22.5pt;border-spacing:0.0px 0.0px;
+    display:table-cell;list-style-position:outside'>
+    <p class=MsoNormal align=center style='text-align:center'><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:white;mso-font-kerning:1.0pt'></span></span>
+               
+    <span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+    </td>
+    <span style='mso-bookmark:_MailOriginal'></span>
+    <td width=13 valign=bottom style='width:9.75pt;padding:0cm 0cm 0cm 0cm;
+    height:22.5pt;border-spacing:0.0px 0.0px;display:table-cell;list-style-position:
+    outside'>
+    <p class=MsoNormal><span style='mso-bookmark:_MailOriginal'></span><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt;
+    mso-no-proof:yes'></span></span><span
+    style='mso-bookmark:_MailOriginal'><span lang=EN-US style='font-size:9.0pt;
+    font-family:"Arial",sans-serif;color:#333333;mso-font-kerning:1.0pt'><o:p></o:p></span></span></p>
+    </td>
+    <span style='mso-bookmark:_MailOriginal'></span>
+   </tr>
+  </table>
+  <span style='mso-bookmark:_MailOriginal'></span></td>
+  <span style='mso-bookmark:_MailOriginal'></span>
+ </tr>
+</table>
+
+</div>
+
+</div>
+
+<p class=MsoNormal><span style='mso-bookmark:_MailOriginal'><span lang=EN-US><span
+style='mso-no-proof:yes'></span></span></span><span
+lang=EN-US><o:p></o:p></span></p>
+
+</blockquote>
+</div>
+</div>
+</body>
+</html>
