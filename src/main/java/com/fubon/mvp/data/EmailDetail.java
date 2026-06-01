@@ -76,11 +76,7 @@ public class EmailDetail extends SidClass {
 		this(master);
 		this.txStatus = txStatus;
 	}
-
-	//------------------------------------------------------------------------------
-	// 讀寫子
-	//------------------------------------------------------------------------------
-
+	
 	public String getUuid() {
 		return uuid;
 	}

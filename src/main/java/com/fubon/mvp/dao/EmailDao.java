@@ -42,10 +42,6 @@ public class EmailDao {
 		this.onlineList.add("Y");
 		this.onlineList.add("0");
 	}
-	
-	//------------------------------------------------------------------------------
-	// 查詢類
-	//------------------------------------------------------------------------------
 
 	/**
 	 * 1. 申請中。
@@ -146,9 +142,18 @@ public class EmailDao {
 		return this.masterRepo.findAllByStatusAndOnlineInOrderByChangeDateAscChangeTimeAsc("00", this.onlineList);
 	}
 	
-	//------------------------------------------------------------------------------
-	// 讀取類
-	//------------------------------------------------------------------------------
+	/**
+	 * 7. 查詢逾時未回覆清單 (三日未回覆重發驗證信用)
+	 *    條件：status="00" 且 txStatus IN ("11", "13")
+	 * @return 清單
+	 */
+	//例如: SELECT * FROM EMAILMAS WHERE STATUS = '00'  AND TX_STATUS IN ('11', '12') ORDER BY ID ASC
+	public List<EmailMaster> overdueResend() {
+		List<String> txList = new ArrayList<String>();
+		txList.add("11");  // 11=寄信後
+		txList.add("13");  // 13=客戶收到
+		return this.masterRepo.findAllByStatusAndTxStatusInOrderById("00", txList);
+	}
 
 	/**
 	 * 1. 依據UUID讀取實體。
@@ -167,10 +172,6 @@ public class EmailDao {
 	public EmailMaster success(String idNo) {
 		return this.masterRepo.findTop1ByIdNoAndStatusOrderByChangeDateDescChangeTimeDesc(idNo, "01");
 	}
-		
-	//------------------------------------------------------------------------------
-	// 操作類
-	//------------------------------------------------------------------------------
 
 	/**
 	 * 1. 儲存郵件主檔。
@@ -202,5 +203,23 @@ public class EmailDao {
 			return ex;
 		}
 		return null;
+	}
+	
+	/**
+	 * 3. 查詢三日未回覆清單(重發驗證信用)。
+	 *     條件：status="00" 且 txStatus="13" 且 CHG_DATE < D-3
+	 * @return 清單
+	 */
+	public List<EmailMaster> findOverdue3DaysAiCalling() {
+		return this.masterRepo.findOverdue3DaysAiCalling();
+	}
+
+	/**
+	 * 4. 查詢逾時未回覆清單 (六日未回覆AI外撥)
+	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
+	 * @return 清單
+	 */
+	public List<EmailMaster> findOverdue6DaysAiCalling() {
+		return this.masterRepo.findOverdue6DaysAiCalling();
 	}
 }

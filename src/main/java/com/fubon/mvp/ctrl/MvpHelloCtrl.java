@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
 
 import org.dom4j.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -66,6 +67,10 @@ public class MvpHelloCtrl {
 		this.times.put("310002", new Date());
 		this.times.put("084000", new Date());
 		this.times.put("084023", new Date());
+		
+		this.times.put("110007", new Date());
+		this.times.put("110008", new Date());
+		
 	}
 			
 	/**
@@ -254,6 +259,7 @@ public class MvpHelloCtrl {
 	 * 8. 測試 MVP084023 連綫。
 	 * @return 電文或日期。
 	 */
+	//http://localhost:8080/mvp/api/hello/084023
 	@GetMapping("/084023")
 	public String hello084023() {
 
@@ -345,4 +351,41 @@ public class MvpHelloCtrl {
 		return String.format("%02d%02d%02d", calendar.get(Calendar.HOUR_OF_DAY), 
 			calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND));
 	}
+	
+	//http://localhost:8080/mvp/api/hello/mvp110007
+	@GetMapping(value = "/mvp110007", produces = MediaType.APPLICATION_XML_VALUE)
+	public String mvp110007() {
+	    if (this.after3seconds("mvp110007")) {
+	        String xml = this.proxy.api("app", "/api/mvp110007")
+	            .body(Mono.just(this.tranx("110007", true, true)), String.class) //加上 body，保持一致
+	            .retrieve()
+	            .bodyToMono(String.class)
+	            .block();
+
+	        //如果下游 API 有回傳 XML，就直接傳回；否則給預設 XML
+	        return xml != null ? xml : "<response><status>success</status><message>OK</message></response>";
+	    }
+
+	    //如果 after3seconds() 不成立，回傳 skip XML
+	    return "<response><status>skip</status><message>" + new Date().toString()  + "</message></response>";
+	}
+	
+	//http://localhost:8080/mvp/api/hello/mvp110008
+	@GetMapping(value = "/mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
+	public String mvp110008() {
+	    if (this.after3seconds("mvp110008")) {
+	        String xml = this.proxy.api("app", "/api/mvp110008")
+	            .body(Mono.just(this.tranx("110008", true, true)), String.class) //加上 body，保持一致
+	            .retrieve()
+	            .bodyToMono(String.class)
+	            .block();
+
+	        //如果下游 API 有回傳 XML，就直接傳回；否則給預設 XML
+	        return xml != null ? xml : "<response><status>success</status><message>OK</message></response>";
+	    }
+
+	    //如果 after3seconds() 不成立，回傳 skip XML
+	    return "<response><status>skip</status><message>" + new Date().toString() + "</message></response>";
+	}
+	
 }

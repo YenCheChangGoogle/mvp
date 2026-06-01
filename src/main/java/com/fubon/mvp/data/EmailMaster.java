@@ -21,83 +21,83 @@ public class EmailMaster extends SidClass {
 
 	// 版本序列號
 	private static final long serialVersionUID = 202111L;
-	
+
 	// 1. UUID
 	@Column(name="UUID", length=32, nullable=false, unique=true)
 	private String uuid;
-	
+
 	// 2. ID(身份証號碼)
 	@Column(name="ID", length=24, nullable=false)
 	private String idNo;
-	
+
 	// 3. ID_TYPE
 	@Column(name="ID_TYPE", length=2, nullable=false)
 	private String idType;
-	
+
 	// 4. CH_NAME
 	@Column(name="CH_NAME", length=120)
 	private String chName;
-	
+
 	// 5. EN_NAME
 	@Column(name="EN_NAME", length=120)
 	private String enName;
-	
+
 	// 6. BRANCH
 	@Column(name="BRANCH", length=5)
 	private String branch;
-	
+
 	// 7. TELLER
 	@Column(name="TELLER", length=10)
 	private String teller;
-	
+
 	// 8. PREV_EMAIL_ADDR
 	@Column(name="PREV_EMAIL_ADDR", length=50)
 	private String prevEmail;
-	
+
 	// 9. AFTER_EMAIL_ADDR
 	@Column(name="AFTER_EMAIL_ADDR", length=50)
 	private String afterEmail;
-	
+
 	// 10. REASON
 	@Column(name="REASON", length=50)
 	private String reason;
-	
+
 	// 11. CHG_DATE
 	@Column(name="CHG_DATE", length=8, nullable=false)
 	private String changeDate;
-	
+
 	// 12. CHG_TIME
 	@Column(name="CHG_TIME", length=8, nullable=false)
 	private String changeTime;
-	
-	// 13. CHNL 
+
+	// 13. CHNL
 	@Column(name="CHNL", length=2)
 	private String channel;
-	
+
 	// 14. SUB_CHNL
 	@Column(name="SUB_CHNL", length=2)
 	private String subChannel;
-	
+
 	// 15. ON_OFF_LINE
 	@Column(name="ON_OFF_LINE", length=1)
 	private String online;
-	
+
 	// 16. TRAN_CODE
 	@Column(name="TRAN_CODE", length=6)
 	private String tranCode;
-	
-	// 17. STATUS(00處理中，01成功完成，02失敗，99作廢)
+
+	// 17. STATUS(00處理中,01成功完成,02失敗,99作廢)
 	@Column(name="STATUS", length=2)
 	private String status;
-	
-	// 18. TX_STATUS(當 STATUS=00/01/02時，此欄為目前交易狀態，01/02時狀態不再變，99時表示當時最後處理的狀況)
+
+	// 18. TX_STATUS(當 STATUS=00/01/02時,此欄為目前交易狀態,01/02時狀態不再變,99時表示當時最後處理的狀況)
 	@Column(name="TX_STATUS", length=2)
 	private String txStatus;
-	
+
 	// 19. ERR_CODE
 	@Column(name="ERR_CODE", length=6)
 	private String errorCode;
-	
+
 	// 20. REMAKR
 	@Column(name="REMAKR", length=500)
 	private String remark;
@@ -105,32 +105,48 @@ public class EmailMaster extends SidClass {
 	// 21. CHECKER
 	@Column(name="CHECKER", length=100)
 	private String checker;
+
+	// 22. TEL_NO (AI外撥手機號碼)
+	@Column(name="TEL_NO", length=20)
+	private String telNo;
+	
+	// 23. FLAG (AI外撥標記: 1=待處理, 2=已獲取, 0=不處理)
+	@Column(name="FLAG", length=1)
+	private String flag;
+	
+	// 24. NAME (AI外撥客戶姓名)
+	@Column(name="NAME", length=120)
+	private String name;
+	
+	// 25. PHONE (AI外撥客戶電話)
+	@Column(name="PHONE", length=20)
+	private String phone;
 	
 	//------------------------------------------------------------------------------
 	// 臨時型
 	//------------------------------------------------------------------------------
-
+	
 	// 1. 查詢UUID
 	@Transient
 	private String queryUuid;
-	
+
 	// 2. 開始日期
 	@Transient
 	private String beginDate;
-	
+
 	// 3. 結束日期
 	@Transient
 	private String endDate;
-	
+
 	// 4. 下個主鍵
 	@Transient
 	private String nextKey;
-	
+
 	// 預設建構子
 	public EmailMaster() {
 		super();
 	}
-	
+
 	/**
 	 * 建構子(1)
 	 * @param doc XML文件
@@ -156,7 +172,7 @@ public class EmailMaster extends SidClass {
 		this.online = doc.selectSingleNode("//ON_OFF_LINE").getText().trim();
 		this.reason = doc.selectSingleNode("//REASON").getText().trim();
 		this.remark = doc.selectSingleNode("//REMARK").getText();
-		
+
 		// 延伸型
 		// (1) remark 欄位後面20個byte會寫入欄位 checker。
 		int len = this.remark.length();
@@ -167,7 +183,7 @@ public class EmailMaster extends SidClass {
 			this.checker = "";
 			this.remark = this.remark.trim();
 		}
-		
+
 		// 臨時型
 		this.queryUuid = doc.selectSingleNode("//QUERY_UUID").getText().trim();
 		this.beginDate = doc.selectSingleNode("//FROM_DATE").getText().trim();
@@ -194,7 +210,7 @@ public class EmailMaster extends SidClass {
 	public boolean invalid110002() {
 		return EmptyUtil.is(this.uuid, this.branch, this.teller, this.idNo, this.idType, this.afterEmail);
 	 }
-	
+
 	/**
 	 * 2. 輸入格式檢查(MVC310001)。
 	 * @return 布林值
@@ -202,13 +218,13 @@ public class EmailMaster extends SidClass {
 	public boolean invalid310001() {
 		return EmptyUtil.is(this.getQueryUuid());
 	}
-	
+
 	/**
 	 * 3. 輸入格式檢查(MVC310002)。
 	 * @return 布林值
 	 */
 	public boolean invalid310002() {
-		
+
 		if ((EmptyUtil.is(this.idNo)) ||
 			(EmptyUtil.not(this.beginDate) && this.beginDate.length() != 8) ||
 			(EmptyUtil.not(this.endDate) && this.endDate.length() != 8)) {
@@ -217,17 +233,17 @@ public class EmailMaster extends SidClass {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * 4. 是作廢條件? (2022/01/24 12:00)
 	 * @return 布林值
 	 */
 	public boolean isCancel() {
-		
+
 		if ((! EmptyUtil.is(this.idNo)) &&
 			("Y".equals(this.online) || "0".equals(this.online)) &&
 			EmptyUtil.is(this.prevEmail) &&
-			EmptyUtil.is(this.afterEmail)) { 
+			EmptyUtil.is(this.afterEmail)) {
 			// 非空值 = uuid, idType
 			if (EmptyUtil.is(this.uuid)) {
 				this.uuid = "0";
@@ -240,23 +256,23 @@ public class EmailMaster extends SidClass {
 			return false;
 		}
 	}
-
-	//------------------------------------------------------------------------------
-	// 覆寫型
-	//------------------------------------------------------------------------------
-
-	@Override
-	public String toString() {
-		return "EmailMaster [uuid=" + uuid + ", idNo=" + idNo + ", idType=" + idType + ", chName=" + chName
-				+ ", enName=" + enName + ", branch=" + branch + ", teller=" + teller + ", prevEmail=" + prevEmail
-				+ ", afterEmail=" + afterEmail + ", reason=" + reason + ", changeDate=" + changeDate + ", changeTime="
-				+ changeTime + ", channel=" + channel + ", subChannel=" + subChannel + ", online=" + online
-				+ ", tranCode=" + tranCode + ", status=" + status + ", txStatus=" + txStatus + ", errorCode="
-				+ errorCode + ", remark=" + remark + ", checker=" + checker + ", queryUuid=" + queryUuid
-				+ ", beginDate=" + beginDate + ", endDate=" + endDate + ", nextKey=" + nextKey + ", getId()=" + getId()
-				+ "]";
-	}
 	
+    /**
+     * 5. 輸入格式檢查(MVP110008)。(2026/05/30 11:30)
+     * @return 布林值
+     */
+    public boolean invalid110008() {
+        // 必填欄位檢查：UUID、ID、ID_TYPE、AFTER_EMAIL
+        if (EmptyUtil.is(this.uuid, this.idNo, this.idType, this.afterEmail)) {
+            return true;
+        }
+        // 狀態檢查：必須是 "00"(處理中) 或 "13"(客戶收到)
+        if (!"00".equals(this.status) && !"13".equals(this.txStatus)) {
+            return true;
+        }
+        return false;
+    }
+    
 	//------------------------------------------------------------------------------
 	// 讀寫子
 	//------------------------------------------------------------------------------
@@ -444,7 +460,7 @@ public class EmailMaster extends SidClass {
 	public void setEndDate(String endDate) {
 		this.endDate = endDate;
 	}
-	
+
 	public String getNextKey() {
 		return nextKey;
 	}
@@ -461,7 +477,64 @@ public class EmailMaster extends SidClass {
 		this.checker = checker;
 	}
 
+	public String getTelNo() {
+		return telNo;
+	}
+
+	public void setTelNo(String telNo) {
+		this.telNo = telNo;
+	}
+
+	public String getFlag() {
+		return flag;
+	}
+
+	public void setFlag(String flag) {
+		this.flag = flag;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
 	public static long getSerialversionuid() {
 		return serialVersionUID;
+	}
+
+	@Override
+	public String toString() {
+		return "EmailMaster [uuid=" + uuid + ", idNo=" + idNo + ", idType=" + idType + ", chName=" + chName
+				+ ", enName=" + enName + ", branch=" + branch + ", teller=" + teller + ", prevEmail=" + prevEmail
+				+ ", afterEmail=" + afterEmail + ", reason=" + reason + ", changeDate=" + changeDate + ", changeTime="
+				+ changeTime + ", channel=" + channel + ", subChannel=" + subChannel + ", online=" + online
+				+ ", tranCode=" + tranCode + ", status=" + status + ", txStatus=" + txStatus + ", errorCode="
+				+ errorCode + ", remark=" + remark + ", checker=" + checker + ", telNo=" + telNo + ", flag=" + flag
+				+ ", name=" + name + ", phone=" + phone + ", queryUuid=" + queryUuid + ", beginDate=" + beginDate
+				+ ", endDate=" + endDate + ", nextKey=" + nextKey + ", invalid110001()=" + invalid110001()
+				+ ", invalid110002()=" + invalid110002() + ", invalid310001()=" + invalid310001() + ", invalid310002()="
+				+ invalid310002() + ", isCancel()=" + isCancel() + ", getUuid()=" + getUuid() + ", getIdNo()="
+				+ getIdNo() + ", getIdType()=" + getIdType() + ", getChName()=" + getChName() + ", getEnName()="
+				+ getEnName() + ", getBranch()=" + getBranch() + ", getTeller()=" + getTeller() + ", getPrevEmail()="
+				+ getPrevEmail() + ", getAfterEmail()=" + getAfterEmail() + ", getReason()=" + getReason()
+				+ ", getChangeDate()=" + getChangeDate() + ", getChangeTime()=" + getChangeTime() + ", getChannel()="
+				+ getChannel() + ", getSubChannel()=" + getSubChannel() + ", getOnline()=" + getOnline()
+				+ ", getTranCode()=" + getTranCode() + ", getStatus()=" + getStatus() + ", getTxStatus()="
+				+ getTxStatus() + ", getErrorCode()=" + getErrorCode() + ", getRemark()=" + getRemark()
+				+ ", getQueryUuid()=" + getQueryUuid() + ", getBeginDate()=" + getBeginDate() + ", getEndDate()="
+				+ getEndDate() + ", getNextKey()=" + getNextKey() + ", getChecker()=" + getChecker() + ", getTelNo()="
+				+ getTelNo() + ", getFlag()=" + getFlag() + ", getName()=" + getName() + ", getPhone()=" + getPhone()
+				+ "]";
 	}
 }

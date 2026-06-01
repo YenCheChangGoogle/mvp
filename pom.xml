@@ -185,6 +185,13 @@
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
+		<!-- Apache POI for Excel parsing (AI result report) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>4.1.2</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -206,7 +213,117 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
+		<!-- SpringBoot2.7.18是配合到8.0.33 -->
+		<!--
+		<dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>8.0.33</version>
+        </dependency>
+        -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.12</version>
+        </dependency>
+        
 	</dependencies>
+
+	<profiles>
+		<!-- Test Profile -->
+		<profile>
+			<id>test</id>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources</directory>
+						<includes>
+							<include>application.properties-test</include>
+							<include>log4j2.properties</include>
+							<include>ESAPI.properties</include>
+							<include>esapi-java-logging.properties</include>
+							<include>antisamy-esapi.xml</include>
+						</includes>
+					</resource>
+				</resources>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<execution>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<!-- 把 application.properties-test 改名成 application.properties -->
+										<copy
+											file="src/main/resources/application.properties-test"
+											tofile="${project.build.outputDirectory}/application.properties"
+											overwrite="true" />
+										
+										<!-- 刪除輸出目錄下的 application.properties-test -->
+										 <delete file="${project.build.outputDirectory}/application.properties-test" />
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- Prod Profile -->
+		<profile>
+			<id>prod</id>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources</directory>
+						<includes>
+							<include>application.properties-prod</include>
+							<include>log4j2.properties</include>
+							<include>ESAPI.properties</include>
+							<include>esapi-java-logging.properties</include>
+							<include>antisamy-esapi.xml</include>
+						</includes>
+					</resource>
+				</resources>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<execution>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<!-- 把 application.properties-prod 改名成 application.properties -->
+										<copy
+											file="src/main/resources/application.properties-prod"
+											tofile="${project.build.outputDirectory}/application.properties"
+											overwrite="true" />
+											
+										 <!-- 刪除輸出目錄下的 application.properties-prod -->
+										 <delete file="${project.build.outputDirectory}/application.properties-prod" />
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	
 	<build>
 		<defaultGoal>compile</defaultGoal>
 		<finalName>mvp</finalName>
