@@ -91,24 +91,49 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
 	public List<EmailMaster> findAllByStatusAndTxStatusInAndChangeDateLessThanOrderById(String status, List<String> txStatusList, String changeDate);
 
 	/**
-	 * 9. 查詢逾時未回覆清單 (三日未回覆)。
-	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-3
+	 * 9.1. 查詢逾時未回覆清單 (三日未回覆)。
+	 *      條件：status="00" 且 txStatus="13" 且 changeDate < D-3
 	 * @return 清單
 	 */
 	//SQL Server
 	//@org.springframework.data.jpa.repository.Query(value="SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -3, GETDATE()), 112) ORDER BY ID", nativeQuery=true)
 	//MySQL
-	@org.springframework.data.jpa.repository.Query(value = "SELECT * " + "FROM EMAILMAS " + "WHERE STATUS = '00' AND TX_STATUS = '13' " + "  AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 3 DAY) ORDER BY ID", nativeQuery = true)
-	public List<EmailMaster> findOverdue3DaysAiCalling();
+	//@org.springframework.data.jpa.repository.Query(value="SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' " + "  AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 3 DAY) ORDER BY ID", nativeQuery = true)
+	//public List<EmailMaster> findOverdue3DaysAiCalling();
+	
+    /**
+     * 9.2. 查詢逾時未回覆清單 (三日未回覆)。
+     *      條件：status="00" 且 txStatus="13" 且 changeDate < 判定日期
+     *      使用範例:
+     *      java.util.Calendar cal = java.util.Calendar.getInstance();
+     *      cal.add(java.util.Calendar.DAY_OF_MONTH, -3);
+     *      String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+     *      return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc("00", "13", threshold);
+     *    
+     */
+	public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc(String status, String txStatus, String changeDate);
 	
 	/**
-	 * 10. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
-	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
+	 * 10.1. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
+	 *       條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
 	 * @return 清單
 	 */
 	//SQL Server
 	//@org.springframework.data.jpa.repository.Query(value="SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -6, GETDATE()), 112) AND FLAG = '1' ORDER BY ID", nativeQuery=true)
 	//MySQL
-	@org.springframework.data.jpa.repository.Query(value = "SELECT * " + "FROM EMAILMAS " + "WHERE STATUS = '00' " + "  AND TX_STATUS = '13' AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 6 DAY) " + "  AND FLAG = '1' ORDER BY ID", nativeQuery = true)
-	public List<EmailMaster> findOverdue6DaysAiCalling();
+	//@org.springframework.data.jpa.repository.Query(value="SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 6 DAY) AND FLAG = '1' ORDER BY ID", nativeQuery = true)
+	//public List<EmailMaster> findOverdue6DaysAiCalling();
+	
+    /**
+     * 10.2. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
+     *       條件：status="00" 且 txStatus="13" 且 changeDate < 判定日期 且 flag="1"
+     *       使用範例:
+     *       java.util.Calendar cal = java.util.Calendar.getInstance();
+     *       cal.add(java.util.Calendar.DAY_OF_MONTH, -6);
+     *       String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+     *       return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
+     *       
+     */
+    public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc(String status, String txStatus, String changeDate, String flag);
+    
 }

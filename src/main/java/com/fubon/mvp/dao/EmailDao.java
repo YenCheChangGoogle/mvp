@@ -156,7 +156,7 @@ public class EmailDao {
 	}
 
 	/**
-	 * 1. 依據UUID讀取實體。
+	 * 7. 依據UUID讀取實體。
 	 * @param uuid 識別值
 	 * @return 實體
 	 */
@@ -165,7 +165,7 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 2. 讀取成功的最後1個實體。
+	 * 8. 讀取成功的最後1個實體。
 	 * @param idNo 身份証號
 	 * @return 實體
 	 */
@@ -174,7 +174,7 @@ public class EmailDao {
 	}
 
 	/**
-	 * 1. 儲存郵件主檔。
+	 * 9. 儲存郵件主檔。
 	 * @param master 實體
 	 * @return 異常類
 	 */
@@ -190,7 +190,7 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 2. 儲存郵件明細檔。
+	 * 10. 儲存郵件明細檔。
 	 * @param detail 實體
 	 * @return 異常類
 	 */
@@ -206,20 +206,30 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 3. 查詢三日未回覆清單(重發驗證信用)。
+	 * 11. 查詢三日未回覆清單(重發驗證信用)。
 	 *     條件：status="00" 且 txStatus="13" 且 CHG_DATE < D-3
 	 * @return 清單
 	 */
 	public List<EmailMaster> findOverdue3DaysAiCalling() {
-		return this.masterRepo.findOverdue3DaysAiCalling();
+		//return this.masterRepo.findOverdue3DaysAiCalling();
+	    
+		java.util.Calendar cal = java.util.Calendar.getInstance();
+	    cal.add(java.util.Calendar.DAY_OF_MONTH, -3);
+	    String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc("00", "13", threshold);
 	}
 
 	/**
-	 * 4. 查詢逾時未回覆清單 (六日未回覆AI外撥)
+	 * 12. 查詢逾時未回覆清單 (六日未回覆AI外撥)
 	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
 	 * @return 清單
 	 */
 	public List<EmailMaster> findOverdue6DaysAiCalling() {
-		return this.masterRepo.findOverdue6DaysAiCalling();
+		//return this.masterRepo.findOverdue6DaysAiCalling();
+		
+	     java.util.Calendar cal = java.util.Calendar.getInstance();
+	     cal.add(java.util.Calendar.DAY_OF_MONTH, -6);
+	     String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+	     return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
 	}
 }

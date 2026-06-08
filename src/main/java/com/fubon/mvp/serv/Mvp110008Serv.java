@@ -5,6 +5,8 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 
 import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -139,6 +141,16 @@ public class Mvp110008Serv {
      * @return 處理是否成功
      */
     public boolean processOverdueRecord(EmailMaster master) {
+    	
+    	String dummyXml = "<Tx><TxHead><HTXTID>110008</HTXTID></TxHead></Tx>";
+        Document dummyDoc = null;
+        //需要匯入 org.dom4j.DocumentHelper
+        try {
+			dummyDoc = DocumentHelper.parseText(dummyXml);
+		} catch (DocumentException e) {
+            return false;
+		}
+        
         // 1. 再查一次 DB，避免時間差。
         EmailMaster current = this.dao.uuid(master.getUuid());
         if (current == null) {
@@ -159,11 +171,12 @@ public class Mvp110008Serv {
         current.setStatus("00");        // "00": 處理中。
         current.setTxStatus("01");      // "01": 收到申請。
         current.setErrorCode("");       // 清除錯誤碼。
+        
         //TODO EMAILMAS
         Exception ex = this.dao.save(current);
         if (ex != null) {
             log.warn("database: email master error.");
-            this.service.response(null, true, true, false, true, ex.toString());
+            this.service.response(dummyDoc, true, true, false, true, ex.toString());
             return false;
         }
         
@@ -171,14 +184,14 @@ public class Mvp110008Serv {
         ex = this.dao.save(new EmailDetail(current));
         if (ex != null) {
             log.warn("database: email detail error.");
-            this.service.response(null, true, true, false, true, ex.toString());
+            this.service.response(dummyDoc, true, true, false, true, ex.toString());
             return false;
         }
 
         log.info("Mvp110008Serv : retry OK ! uuid='" + current.getUuid() + "'");
 
         // 4. 返回下行電文。
-        this.service.response(null, true, true, true, true);
+        this.service.response(dummyDoc, true, true, true, true);
         return true;
     }
 
