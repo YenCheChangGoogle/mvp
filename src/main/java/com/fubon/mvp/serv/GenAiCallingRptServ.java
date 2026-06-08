@@ -1,4 +1,4 @@
-package com.fubon.mvp.serv;
+﻿package com.fubon.mvp.serv;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +31,7 @@ import java.util.*;
  *   6. 清理解密的設定檔（避免明碼密碼殘留）
  *
  * 【執行排程】
- *   cron = "0 0 1 * * *"  → 台灣時間每日凌晨 1:00
- *   （先於 ImportAiResultServ 的 02:00，確保當日 02:00 時 FTP 端已有報表可下載）
+ *   cron = "0 0 1 * * ?"  → 台灣時間每日凌晨 1:00
  *
  * 【依賴環境】
  *   - openssl     → 解密 mvpsqlserver.conf.enc
@@ -85,7 +84,11 @@ public class GenAiCallingRptServ {
     //   REPORTS_DIR → CSV 報表產出目錄
     //   SH_DIR      → shell 指令腳本目錄（含 decode.sh、ftp.ini）
     // -----------------------------------------------------------------
-    private final String HOME = System.getProperty("user.home");
+    
+    //原本是 private final String HOME = System.getProperty("user.home"); 但是會因為 啟動系統 不同使用者 路徑而不一樣 導致取不到檔案的困惱 因此改成指定路徑  
+    @Value("${mvp.home.dir:/home/mvpadm}")
+    private String HOME;
+        
     private final String REPORTS_DIR = "/home/mvpadm/reports";
     private final String SH_DIR = "/home/mvpadm/sh";
     //TODO 指定要建立的外撥檔案名稱 前綴字眼
@@ -94,13 +97,16 @@ public class GenAiCallingRptServ {
     // =================================================================
     // 【排程入口】每日凌晨 1:00 觸發
     // =================================================================
-    @Scheduled(cron = "0 0 1 * * *", zone = "Asia/Taipei")
+    @Scheduled(cron = "0 0 1 * * ?", zone = "Asia/Taipei")
     public void execute() {
         log.info("Starting AI Calling Report process...");
         try {
             // 執行核心流程
             runShellLikeProcess();
             log.info("AI Calling Report process completed successfully.");
+        } catch (SkipExecutionException e) {
+            // 預期性跳過（非 master 節點）→ INFO 等級，不觸發告警
+            log.info("Skipping execution: {}", e.getMessage());
         } catch (Exception e) {
             // 非預期性錯誤（如：FTP 連線失敗、DB 連線失敗、指令執行失敗）
             // 記錄 ERROR 等級，需監控/告警
@@ -112,6 +118,7 @@ public class GenAiCallingRptServ {
     // 【核心流程】模擬 shell 腳本 gen_ai_calling_rpt.sh 的完整步驟
     // =================================================================
     private void runShellLikeProcess() throws Exception {
+        try {
 
         // -----------------------------------------------------------------
         // 步驟 1：日期設定
@@ -136,6 +143,7 @@ public class GenAiCallingRptServ {
         String port = sqlConf.get("port");
         String database = sqlConf.get("database");
         String separator = sqlConf.get("sep");
+        String separatorSafe = sqlConf.getOrDefault("sep", "|");
         String user = sqlConf.get("user");
         String password = sqlConf.get("password");
 
@@ -146,13 +154,13 @@ public class GenAiCallingRptServ {
         //   若非 master，刪除設定檔後跳出（不視為錯誤）
         // -----------------------------------------------------------------
         String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
-        String master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
+        String master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
 
         // 若首次查詢返回空值，等待 10 秒後重試
         if (master.isEmpty()) {
             log.info("Master not found, sleeping 10s...");
             Thread.sleep(10000);
-            master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
+            master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
         }
 
         // 取得當前機器的主機名稱並比較
@@ -219,10 +227,11 @@ public class GenAiCallingRptServ {
         // -----------------------------------------------------------------
         processFtpUpload(reportFile);
 
-        // -----------------------------------------------------------------
-        // 最後：清理解密的設定檔（避免明碼密碼殘留）
-        // -----------------------------------------------------------------
-        Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
+        } finally {
+            // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
+            try { Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf")); }
+            catch (IOException e) { log.warn("Failed to delete mvpsqlserver.conf", e); }
+        }
     }
     
     /**

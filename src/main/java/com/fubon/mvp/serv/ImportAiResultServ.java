@@ -1,4 +1,4 @@
-package com.fubon.mvp.serv;
+﻿package com.fubon.mvp.serv;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -44,7 +44,7 @@ import org.springframework.stereotype.Service;
  *   6. 處理完成後，將檔案移至 /processed/YYYYMM/ 備份目錄
  *
  * 【執行排程】
- *   cron = "0 0 2 * * *"  → 台灣時間每日凌晨 2:00
+ *   cron = "0 0 2 * * ?"  → 台灣時間每日凌晨 2:00
  *
  * 【依賴環境】
  *   - openssl     → 解密 mvpsqlserver.conf.enc
@@ -92,7 +92,7 @@ public class ImportAiResultServ {
     //   SH_DIR        → shell 指令腳本目錄（含 decode.sh、ftp.ini）
     //   LOGS_DIR      → 執行日誌存放目錄
     // -----------------------------------------------------------------
-    private final String HOME = System.getProperty("user.home");
+    @Value("${mvp.home.dir:/home/mvpadm}") private String HOME;
     private final String DOWNLOAD_DIR = "/home/mvpadm/download";
     private final String PROCESSED_DIR = "/home/mvpadm/processed";
     private final String SH_DIR = "/home/mvpadm/sh";
@@ -103,7 +103,7 @@ public class ImportAiResultServ {
     // =================================================================
     // 【排程入口】每日凌晨 2:00 觸發
     // =================================================================
-    @Scheduled(cron = "0 0 2 * * *", zone = "Asia/Taipei")
+    @Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Taipei")
     public void execute() {
         log.info("Starting AI Result Import process...");
         try {
@@ -125,6 +125,7 @@ public class ImportAiResultServ {
     // 【核心流程】模擬 shell 腳本 import_ai_result.sh 的完整步驟
     // =================================================================
     private void runShellLikeProcess() throws Exception {
+        try {
 
         // -----------------------------------------------------------------
         // 步驟 1：日期設定
@@ -164,6 +165,7 @@ public class ImportAiResultServ {
         String port = sqlConf.get("port");
         String database = sqlConf.get("database");
         String separator = sqlConf.get("sep");
+        String separatorSafe = sqlConf.getOrDefault("sep", "|");
         String user = sqlConf.get("user");
         String password = sqlConf.get("password");
 
@@ -174,12 +176,14 @@ public class ImportAiResultServ {
         //   若非 master，刪除設定檔後跳出（不視為錯誤）
         // -----------------------------------------------------------------
         String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
-        String master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
+        String master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
 
         // 若首次查詢返回空值，等待 10 秒後重試
         if (master.isEmpty()) {
+            log.info("Master not found, sleeping 10s...");
+            appendLog(logFile, "Master not found, sleeping 10s...");
             Thread.sleep(10000);
-            master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
+            master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
         }
 
         // 取得當前機器的主機名稱並比較
@@ -188,7 +192,6 @@ public class ImportAiResultServ {
             log.info("Not master node, exiting...");
             appendLog(logFile, "Not master node, exiting...");
             // 清理解密的設定檔（避免明碼密碼殘留）
-            Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
             throw new SkipExecutionException("Not master node");
         }
         appendLog(logFile, "Master node confirmed, proceeding...");
@@ -258,11 +261,14 @@ public class ImportAiResultServ {
                 String ftpError = "ERROR: FTP download failed with exit code (FTP下載檔案異常)" + exitCode;
                 log.error(ftpError);
                 appendLog(logFile, ftpError);
-                Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
                 throw new RuntimeException(ftpError);
             }
-        }
+        } else {
+            String ftpWarning = "WARNING: ftp.ini 無法取得足夠帳號密碼 (count=" + count + "), 跳過 FTP 下載";
+            log.warn(ftpWarning);
+            appendLog(logFile, ftpWarning);
 
+        }
         //TODO 處理前的特別檢查
         
         // -----------------------------------------------------------------
@@ -284,7 +290,6 @@ public class ImportAiResultServ {
             String lsResult = executeCmdWithOutput("ls -la " + DOWNLOAD_DIR + "/"+CALLLIST_FILENAME_PREFIX+"*.xlsx");
             appendLog(logFile, "Available files in " + DOWNLOAD_DIR + " (列出下載目錄中所有 "+CALLLIST_FILENAME_PREFIX+"*.xlsx 檔案) :\n" + lsResult);
 
-            Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
             throw new SkipExecutionException("File not found: " + localFile);
         }
 
@@ -298,7 +303,6 @@ public class ImportAiResultServ {
                             "Skipping to avoid processing stale data.";
             log.warn(warning);
             appendLog(logFile, warning);
-            Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
             throw new SkipExecutionException("File too old: " + fileAgeSeconds + " seconds");
         }
         
@@ -317,10 +321,9 @@ public class ImportAiResultServ {
             importAiResultProcess.processAiResultReport(localFile);
             appendLog(logFile, "SUCCESS: AI result import completed");
         } catch (Exception ex) {
-            log.error("Failed to process Excel file: {}", ex.getMessage());
+            log.error("Failed to process Excel file: {}", ex.getMessage(), ex);
             appendLog(logFile, "ERROR: Failed to process Excel - " + ex.getMessage());
-            Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
-            throw ex;
+            throw new RuntimeException("Failed to process Excel", ex);
         }
 
         // -----------------------------------------------------------------
@@ -343,9 +346,11 @@ public class ImportAiResultServ {
                    "\n==========================================");
 
         // -----------------------------------------------------------------
-        // 最後：清理解密的設定檔（避免明碼密碼殘留）
-        // -----------------------------------------------------------------
-        Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf"));
+        } finally {
+            // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
+            try { Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf")); }
+            catch (IOException e) { log.warn("Failed to delete mvpsqlserver.conf", e); }
+        }
     }
     
     /**
