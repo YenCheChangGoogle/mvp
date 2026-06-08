@@ -1,4 +1,4 @@
-﻿package com.fubon.mvp.serv;
+package com.fubon.mvp.serv;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

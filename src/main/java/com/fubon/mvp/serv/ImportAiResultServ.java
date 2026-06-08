@@ -1,4 +1,4 @@
-﻿package com.fubon.mvp.serv;
+package com.fubon.mvp.serv;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

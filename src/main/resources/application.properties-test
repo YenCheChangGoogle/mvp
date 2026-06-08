@@ -1,5 +1,4 @@
-# @author MILO-GAO(\u9ad8\u632f\u9298)@2020 #
-## MVP (\u6e2c\u8a66\u74b0\u5883) ##
+#test
 
 # controller
 server.servlet.context-path=/mvp
