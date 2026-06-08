@@ -1,0 +1,15 @@
+
+📌
+函式庫						舊版本	=>	新版本
+Spring Boot Paren			2.6.2 	=> 	2.6.15
+Log4j api/core/to-slf4j		2.17.0 	=> 	2.21.1
+jsoup						1.13.1 	=> 	1.18.3
+OWASP ESAPI					2.2.3.1 => 	2.7.0.0
+jasypt-spring-boot-starter	3.0.4 	=> 	3.0.5
+dom4j						1.6.1 	=> 	2.1.4
+xalan						2.7.2 	=> 	2.7.3
+
+## ⚠️ 特別注意：ESAPI 2.7.0.0 的升級注意事項
+ESAPI 從 2.2.3.1 跳到 2.7.0.0，跨越了 2.3.0.0 的重大變更。
+根據官方 release note，**需要更新 `antisamy-esapi.xml`** 預設配置來修補 CVE-2022-23891。
+建議在下次打包測試時確認 `antisamy-esapi.xml` 是否需要更新。
