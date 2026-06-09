@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,17 +94,25 @@ public class ImportAiResultServ {
     //   SH_DIR        → shell 指令腳本目錄（含 decode.sh、ftp.ini）
     //   LOGS_DIR      → 執行日誌存放目錄
     // -----------------------------------------------------------------
-    @Value("${mvp.home.dir:/home/mvpadm}") private String HOME;
+    @Value("${mvp.home.dir:/home/mvpadm}") 
+    private String HOME;
+    
+    //TODO 要處理的檔案下載的路徑
     private final String DOWNLOAD_DIR = "/home/mvpadm/download";
-    private final String PROCESSED_DIR = "/home/mvpadm/processed";
-    private final String SH_DIR = "/home/mvpadm/sh";
-    private final String LOGS_DIR = "/home/mvpadm/logs";
+    
+    //TODO 處理後存放檔案的目錄
+    private final String PROCESSED_DIR = "/home/mvpadm/reports";
+    
     //TODO 指定只要處理的檔案名稱 前綴字眼
     private final String CALLLIST_FILENAME_PREFIX="CallList_";
 
+    private final String SH_DIR = "/home/mvpadm/sh";
+    private final String LOG_DIR = "/home/mvpadm/logs";
+    
     // =================================================================
     // 【排程入口】每日凌晨 2:00 觸發
     // =================================================================
+    //TODO 排程執行時間
     @Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Taipei")
     public void execute() {
         log.info("Starting AI Result Import process...");
@@ -130,36 +140,26 @@ public class ImportAiResultServ {
         // -----------------------------------------------------------------
         // 步驟 1：日期設定
         //   fileDate    → 昨日的日期（YYYYMMDD），用於命名檔案
-        //   currentMonth → 當月（YYYYMM），用於備份目錄分層
         // -----------------------------------------------------------------
+        log.info("步驟1 下載要處置的檔案存放 日期命名設定");
+
         LocalDate today = LocalDate.now();
         String fileDate = today.minusDays(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String currentMonth = today.format(DateTimeFormatter.ofPattern("yyyyMM"));
-
+        
         // 組合檔案名稱與路徑
-        String aiFilename = CALLLIST_FILENAME_PREFIX + fileDate + ".xlsx";          // 目標檔案：CallList_20260618.xlsx
-        String localFile = DOWNLOAD_DIR + "/" + aiFilename;           // 本地路徑：/home/mvpadm/download/CallList_20260618.xlsx
-        String logFile = LOGS_DIR + "/AI_RESULT_" + fileDate + ".log"; // 日誌路徑：/home/mvpadm/logs/AI_RESULT_20260618.log
+        String aiFilename = CALLLIST_FILENAME_PREFIX + fileDate + ".xlsx"; // 目標檔案：CallList_20260618.xlsx
+        String localFile = DOWNLOAD_DIR + "/" + aiFilename; // 本地路徑：/home/mvpadm/download/CallList_20260618.xlsx
+        String logFile = LOG_DIR + "/AI_RESULT_" + fileDate + ".log"; // 日誌路徑：/home/mvpadm/logs/AI_RESULT_20260618.log
 
-        log.info("Target file: {}, Local path: {}", aiFilename, localFile);
-        appendLog(logFile, 
-        		"==========================================\n"+
-        		"AI Result Import Script\n"+
-        		"Target file (本次處置的目標檔案): " + aiFilename + "\n"+
-        		"Local path (下載後暫存路徑): " + localFile + "\n"+
-        		"==========================================");
+        log.info("下載要處置的檔案存放於 {}", localFile);
 
         // -----------------------------------------------------------------
         // 步驟 2：解密 SQL 連線設定檔
         //   使用 RSA 私鑰解密 mvpsqlserver.conf.enc，產生明碼 mvpsqlserver.conf
         //   此檔包含：ip, port, database, sep, user, password
         // -----------------------------------------------------------------
-        executeCmd(String.format(
-            "openssl rsautl -decrypt -inkey %s/rsa.key -in %s/mvpsqlserver.conf.enc -out %s/mvpsqlserver.conf",
-            HOME, HOME, HOME
-        ));
-
-        // 讀取解密的設定檔，轉成 key-value 配對
+        log.info("步驟2 解密 SQL 連線設定檔");
+        executeCmd(String.format("openssl rsautl -decrypt -inkey %s/rsa.key -in %s/mvpsqlserver.conf.enc -out %s/mvpsqlserver.conf", HOME, HOME, HOME));
         Map<String, String> sqlConf = readSqlConfig(HOME + "/mvpsqlserver.conf");
         String ip = sqlConf.get("ip");
         String port = sqlConf.get("port");
@@ -175,26 +175,22 @@ public class ImportAiResultServ {
         //   若查詢失敗，等待 10 秒後重試一次
         //   若非 master，刪除設定檔後跳出（不視為錯誤）
         // -----------------------------------------------------------------
+        log.info("步驟3 確認當前機器是否為 master 節點");
         String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
         String master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
-
         // 若首次查詢返回空值，等待 10 秒後重試
         if (master.isEmpty()) {
-            log.info("Master not found, sleeping 10s...");
-            appendLog(logFile, "Master not found, sleeping 10s...");
+            log.info("查詢失敗, 等待 10 秒後重試一次...");
             Thread.sleep(10000);
             master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
         }
-
         // 取得當前機器的主機名稱並比較
         String runMachine = java.net.InetAddress.getLocalHost().getHostName();
         if (!master.equals(runMachine)) {
-            log.info("Not master node, exiting...");
-            appendLog(logFile, "Not master node, exiting...");
+            log.info("非master節點 無須執行...");
             // 清理解密的設定檔（避免明碼密碼殘留）
             throw new SkipExecutionException("Not master node");
         }
-        appendLog(logFile, "Master node confirmed, proceeding...");
 
         // -----------------------------------------------------------------
         // 步驟 4：從 FTP 下載 AI 結果報表
@@ -203,12 +199,13 @@ public class ImportAiResultServ {
         //   c. 執行 ftp 指令，下載檔案至 DOWNLOAD_DIR
         //   d. 檢查 FTP 回傳碼，失敗則拋出例外
         // -----------------------------------------------------------------
+        log.info("步驟4 從 FTP下載AI結果報表");
         File ftpIni = new File(SH_DIR + "/ftp.ini");
+        log.info("ftp.ini 路徑 "+ftpIni.getAbsolutePath());
         List<String> ftpLines = Files.readAllLines(ftpIni.toPath());
         String ftpUser = "";
         String ftpPass = "";
         int count = 0;
-
         // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
         for (String line : ftpLines) {
             if (line.trim().isEmpty()) continue;
@@ -217,20 +214,16 @@ public class ImportAiResultServ {
             else ftpPass = decoded;
             count++;
         }
-
         // 僅在成功讀取帳號密碼後才執行 FTP 下載
-        if (count >= 2) {
-            appendLog(logFile, "Connecting to FTP server...\nDownloading " + aiFilename + "...");
-
+        if (StringUtil.isNotBlank(ftpUser) && StringUtils.isNotBlank(ftpPass)) {
+            log.info("連線FTP伺服器下載檔案 "+aiFilename+" 暫存於"+DOWNLOAD_DIR);
             // 確保下載目錄存在
             Files.createDirectories(Paths.get(DOWNLOAD_DIR));
-
             // 啟動 ftp 程序（-p 表示 passive mode，-n 表示不自動登入）
             ProcessBuilder pb = new ProcessBuilder("ftp", "-p", "-n", FTP_IP);
             pb.redirectErrorStream(true); // 合併 stdout 與 stderr
             Process process = pb.start();
-
-            // 透過 stdin 輸入 ftp 指令序列
+            log.info("透過 stdin 輸入 ftp 指令序列");
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
                 writer.write("quote USER " + ftpUser + "\n");    // 帳號認證
                 writer.write("quote PASS " + ftpPass + "\n");    // 密碼認證
@@ -240,89 +233,46 @@ public class ImportAiResultServ {
                 writer.write("quit\n");                          // 結束連線
                 writer.flush();
             }
-
-            // 讀取 ftp 程序的 stdout 輸出，並記錄到日誌
+            log.info("讀取 ftp 程序的 stdout 輸出 並記錄到日誌");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String ftpLine;
                 StringBuilder ftpOutput = new StringBuilder();
                 while ((ftpLine = reader.readLine()) != null) {
                     ftpOutput.append(ftpLine).append("\n");
                 }
-                appendLog(logFile, ftpOutput.toString());
             }
-
             // 等待程序結束並取得回傳碼
             int exitCode = process.waitFor();
-            log.info("FTP download exited with code: {}", exitCode);
-            appendLog(logFile, "FTP download result: " + exitCode);
-
-            // ★ 檢查 FTP 是否成功，失敗則提前結束
+            log.info("FTP 下載結束碼 {}", exitCode);
+            //檢查 FTP 是否成功，失敗則提前結束
             if (exitCode != 0) {
-                String ftpError = "ERROR: FTP download failed with exit code (FTP下載檔案異常)" + exitCode;
+                String ftpError = "ERROR: FTP下載失敗 (FTP下載檔案異常)" + exitCode;
                 log.error(ftpError);
-                appendLog(logFile, ftpError);
                 throw new RuntimeException(ftpError);
             }
         } else {
-            String ftpWarning = "WARNING: ftp.ini 無法取得足夠帳號密碼 (count=" + count + "), 跳過 FTP 下載";
+            String ftpWarning = "處置異常 ftp.ini 無法取得足夠帳號密碼, 跳過FTP下載";
             log.warn(ftpWarning);
-            appendLog(logFile, ftpWarning);
-
         }
-        //TODO 處理前的特別檢查
         
         // -----------------------------------------------------------------
-        // 步驟 5：驗證下載檔案是否存在且為新檔
-        //   a. 檢查檔案是否存在（若不存在，列出目錄中可用檔案）
-        //   b. 檢查檔案修改時間（超過 12 小時視為舊檔，不處理）
+        // 步驟 5
         // -----------------------------------------------------------------
         // 檢查檔案是否存在
         if (!Files.exists(Paths.get(localFile))) {
-            String error = "ERROR: File " + localFile + " not found!\n" +
-                          "Possible reasons:\n" +
-                          "  1. FTP download failed\n" +
-                          "  2. File name mismatch\n" +
-                          "  3. File not yet uploaded by AI platform";
-            log.error(error);
-            appendLog(logFile, error);
-
-            // 列出下載目錄中所有 CallList_*.xlsx 檔案，協助除錯
-            String lsResult = executeCmdWithOutput("ls -la " + DOWNLOAD_DIR + "/"+CALLLIST_FILENAME_PREFIX+"*.xlsx");
-            appendLog(logFile, "Available files in " + DOWNLOAD_DIR + " (列出下載目錄中所有 "+CALLLIST_FILENAME_PREFIX+"*.xlsx 檔案) :\n" + lsResult);
-
-            throw new SkipExecutionException("File not found: " + localFile);
+            throw new SkipExecutionException("要處置的檔案不存在 " + localFile);
         }
-
-        // 檢查檔案修改時間，避免處理舊檔（檔案需小於 12 小時內修改）
-        Path filePath = Paths.get(localFile);
-        java.nio.file.attribute.BasicFileAttributes attrs = Files.readAttributes(filePath, java.nio.file.attribute.BasicFileAttributes.class);
-        long fileAgeSeconds = (System.currentTimeMillis() - attrs.lastModifiedTime().toMillis()) / 1000;
-        if (fileAgeSeconds > 12 * 3600) {
-            String warning = "WARNING: File " + localFile +
-                            " is too old (modified " + fileAgeSeconds + " seconds ago).\n" +
-                            "Skipping to avoid processing stale data.";
-            log.warn(warning);
-            appendLog(logFile, warning);
-            throw new SkipExecutionException("File too old: " + fileAgeSeconds + " seconds");
-        }
-        
-        // 驗證檢查通過 紀錄LOG
-        appendLog(logFile, "File found: " + localFile + " (modified " + fileAgeSeconds + " seconds ago)");
-
-        //TODO 解析EXCEL 處理完後 備份已處理的檔案並清理
         
         // -----------------------------------------------------------------
         // 步驟 6：呼叫 Excel 處理服務
         //   直接注入 ImportAiResultToProcessServ，取代 curl 呼叫 REST API
         //   優點：無 HTTP 開銷、無 curl 外部依賴、例外可追溯
         // -----------------------------------------------------------------
-        appendLog(logFile, "Processing Excel file directly...");
+        log.info("解析下載檔案 "+localFile+" 並更新相關資料");
         try {
             importAiResultProcess.processAiResultReport(localFile);
-            appendLog(logFile, "SUCCESS: AI result import completed");
         } catch (Exception ex) {
-            log.error("Failed to process Excel file: {}", ex.getMessage(), ex);
-            appendLog(logFile, "ERROR: Failed to process Excel - " + ex.getMessage());
+            log.error("解析下載檔案 發生異常 {}", ex.getMessage(), ex);
             throw new RuntimeException("Failed to process Excel", ex);
         }
 
@@ -333,36 +283,18 @@ public class ImportAiResultServ {
         //   範例: /home/mvpadm/download/CallList_20260618.xlsx → /home/mvpadm/processed/202606/CallList_20260618.xlsx
         // -----------------------------------------------------------------
         
-        String backupDir = PROCESSED_DIR + "/" + currentMonth;
+        String backupDir = PROCESSED_DIR;
         Files.createDirectories(Paths.get(backupDir));
 
         Path source = Paths.get(localFile);
         Path target = Paths.get(backupDir, aiFilename);
         Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        log.info("下載檔案處置完畢後 備份至" + target);
 
-        appendLog(logFile, "File backed up to " + target +
-                   "\n==========================================\n" +
-                   "Processing completed at " + java.time.LocalDateTime.now() +
-                   "\n==========================================");
-
-        // -----------------------------------------------------------------
         } finally {
             // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
             try { Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf")); }
-            catch (IOException e) { log.warn("Failed to delete mvpsqlserver.conf", e); }
-        }
-    }
-    
-    /**
-     * 附加訊息至日誌檔案（UTF-8 編碼，追寫模式）
-     * @param logPath  日誌檔案完整路徑
-     * @param message  要寫入的訊息內容
-     */
-    private void appendLog(String logPath, String message) {
-        try {
-            Files.write(Paths.get(logPath), (message + "\n").getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            log.error("Failed to write to log file: {}", logPath, e);
+            catch (IOException e) { log.warn("刪除 mvpsqlserver.conf 異常", e); }
         }
     }
 
@@ -374,6 +306,7 @@ public class ImportAiResultServ {
      * @throws IOException 檔案讀取失敗
      */
     private Map<String, String> readSqlConfig(String path) throws IOException {
+    	log.info("讀取 SQL 設定檔，轉為 key-value 配對");
         Map<String, String> conf = new HashMap<>();
         List<String> lines = Files.readAllLines(Paths.get(path));
         for (String line : lines) {
@@ -398,6 +331,8 @@ public class ImportAiResultServ {
      * @return sqlcmd 的 stdout 輸出結果
      */
     private String executeSqlCmd(String ip, String port, String db, String user, String pass, String sep, String query) throws Exception {
+    	log.info(query);
+    	
         // sqlcmd 參數說明：
         //   -S      → 伺服器位址
         //   -h -1   → 關閉列計數器
@@ -421,6 +356,8 @@ public class ImportAiResultServ {
      * @throws Exception 指令執行失敗（exitCode != 0）
      */
     private void executeCmd(String cmd) throws Exception {
+    	log.info("執行 shell 指令（不須回傳值） "+cmd);
+    	
         Process process = Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", cmd});
         // 讀取 stdout 避免程序阻塞（buffer 滿會導致子程序卡住）
         drainStream(process.getInputStream());
@@ -439,6 +376,8 @@ public class ImportAiResultServ {
      * @throws Exception 指令執行失敗（exitCode != 0）
      */
     private String executeCmdWithOutput(String cmd) throws Exception {
+    	log.info(" 執行 shell 指令（須回傳 stdout 內容）"+cmd);
+    	
         Process process = Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", cmd});
         StringBuilder output = new StringBuilder();
         // 讀取 stdout 並累積輸出結果
@@ -483,7 +422,6 @@ public class ImportAiResultServ {
      * 【使用時機】
      *   - 當前機器非 master 節點
      *   - 檔案不存在（FTP 尚未上傳）
-     *   - 檔案過舊（超過 12 小時未修改）
      *
      * 【與 RuntimeException 的差異】
      *   - SkipExecutionException → 記錄 INFO 等級，不觸發告警

@@ -165,6 +165,7 @@ public class Mvp110008Serv {
             return false;
         }
 
+        //TODO 三日未回撥 重發驗證信
         // 3. 更新資料庫。
         current.setFlag("1");           // "1": 重發標記。
         current.setTranCode("110008");  // 交易代號：110008。

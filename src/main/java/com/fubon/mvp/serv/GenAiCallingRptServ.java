@@ -1,5 +1,6 @@
 package com.fubon.mvp.serv;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ============================================================================
@@ -85,14 +87,17 @@ public class GenAiCallingRptServ {
     //   SH_DIR      → shell 指令腳本目錄（含 decode.sh、ftp.ini）
     // -----------------------------------------------------------------
     
-    //原本是 private final String HOME = System.getProperty("user.home"); 但是會因為 啟動系統 不同使用者 路徑而不一樣 導致取不到檔案的困惱 因此改成指定路徑  
-    @Value("${mvp.home.dir:/home/mvpadm}")
+   @Value("${mvp.home.dir:/home/mvpadm}")
     private String HOME;
-        
-    private final String REPORTS_DIR = "/home/mvpadm/reports";
-    private final String SH_DIR = "/home/mvpadm/sh";
-    //TODO 指定要建立的外撥檔案名稱 前綴字眼
-    private final String AI_CALLING_FILENAME_PREFIX="AI_CALLING_";
+    
+    @Value("${mvp.report.dir:/home/mvpadm/reports}")
+    private String REPORTS_DIR = "/home/mvpadm/reports";
+    
+    @Value("${mvp.sh.dir:/home/mvpadm/sh}")
+    private String SH_DIR = "/home/mvpadm/sh";
+    
+    @Value("${mvp.ai_calling_filename_prefix:AI_CALLING_}")
+    private String AI_CALLING_FILENAME_PREFIX="AI_CALLING_";
 
     // =================================================================
     // 【排程入口】每日凌晨 1:00 觸發
@@ -142,8 +147,7 @@ public class GenAiCallingRptServ {
         String ip = sqlConf.get("ip");
         String port = sqlConf.get("port");
         String database = sqlConf.get("database");
-        String separator = sqlConf.get("sep");
-        String separatorSafe = sqlConf.getOrDefault("sep", "|");
+        String separator = sqlConf.getOrDefault("sep", "|");
         String user = sqlConf.get("user");
         String password = sqlConf.get("password");
 
@@ -154,13 +158,13 @@ public class GenAiCallingRptServ {
         //   若非 master，刪除設定檔後跳出（不視為錯誤）
         // -----------------------------------------------------------------
         String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
-        String master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
+        String master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
 
         // 若首次查詢返回空值，等待 10 秒後重試
         if (master.isEmpty()) {
             log.info("Master not found, sleeping 10s...");
             Thread.sleep(10000);
-            master = executeSqlCmd(ip, port, database, user, password, separatorSafe, masterQuery).trim();
+            master = executeSqlCmd(ip, port, database, user, password, separator, masterQuery).trim();
         }
 
         // 取得當前機器的主機名稱並比較
@@ -213,11 +217,18 @@ public class GenAiCallingRptServ {
 
         String sqlData = executeSqlCmd(ip, port, database, user, password, ",", dataQuery);
         Files.write(reportPath.toPath(), sqlData.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-
-        // 用 sed 清除 CSV 中的多餘空白 (s/ *//g → 刪除所有空白字元)
+        
         String cleanFile = reportFile + "_CLEAN";
-        executeCmd(String.format("cat %s/%s | sed 's/ *//g' > %s/%s", REPORTS_DIR, reportFile, REPORTS_DIR, cleanFile));
-        executeCmd(String.format("mv %s/%s %s/%s", REPORTS_DIR, cleanFile, REPORTS_DIR, reportFile));
+        try {
+            // 用 sed 清除 CSV 中的多餘空白 (s/ *//g → 刪除所有空白字元)
+            executeCmd(String.format("cat %s/%s | sed 's/ *//g' > %s/%s", REPORTS_DIR, reportFile, REPORTS_DIR, cleanFile));
+            executeCmd(String.format("mv %s/%s %s/%s", REPORTS_DIR, cleanFile, REPORTS_DIR, reportFile));
+        }
+        catch(Exception e) {
+            // mv 失敗時刪除殘留的 _CLEAN 檔，避免垃圾累積
+            try { Files.deleteIfExists(Paths.get(cleanFile)); } catch (IOException ignored) {}
+            throw e;
+        }
 
         // -----------------------------------------------------------------
         // 步驟 5：透過 FTP 上傳報表至合作廠商
@@ -253,42 +264,86 @@ public class GenAiCallingRptServ {
         String ftpUser = "";
         String ftpPass = "";
         int count = 0;
-
         // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
         for (String line : lines) {
             if (line.trim().isEmpty()) continue;
             String decoded = executeCmdWithOutput(String.format("sh %s/decode.sh %s", SH_DIR, line)).trim();
             if (count == 0) {
                 ftpUser = decoded;
-            } else {
+            } else if (count == 1) {
                 ftpPass = decoded;
+                break;
             }
             count++;
         }
+        
+        if (StringUtils.isNotEmpty(ftpUser) && StringUtils.isNotEmpty(ftpPass)) {
 
-        // 僅在成功讀取帳號密碼後才執行 FTP 上傳
-        if (count >= 2) {
-            // 啟動 ftp 程序（-p passive mode, -n 不自動登入）
-            // 模擬 shell 的 heredoc << END_SCRIPT 做法
-            ProcessBuilder pb = new ProcessBuilder("ftp", "-p", "-n", FTP_IP);
-            pb.redirectErrorStream(true); // 合併 stdout 與 stderr
-            Process process = pb.start();
+            File localFile = new File(REPORTS_DIR, reportFile);
+            if (!localFile.isFile()) {
+                log.error("Local file not found: {}", localFile.getAbsolutePath());
+            } else {
 
-            // 透過 stdin 輸入 ftp 指令序列
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
-                writer.write("quote USER " + ftpUser + "\n");    // 帳號認證
-                writer.write("quote PASS " + ftpPass + "\n");    // 密碼認證
-                writer.write("lcd " + REPORTS_DIR + "\n");      // 切換本地上傳目錄
-                writer.write("cd /upload/A0001527/MVP_2_AUC\n"); // 切換至遠端目標目錄
-                writer.write("put " + reportFile + "\n");       // 上傳目標檔案
-                writer.write("quit\n");                          // 結束連線
-                writer.flush();
+                ProcessBuilder pb = new ProcessBuilder("ftp", "-p", "-n", FTP_IP);
+                pb.redirectErrorStream(true);
+                Process process = null;
+
+                try {
+                    process = pb.start();
+
+                    // 透過 stdin 餵入 ftp 指令
+                    try (BufferedWriter writer = new BufferedWriter(
+                            new OutputStreamWriter(process.getOutputStream()))) {
+                        writer.write("quote USER " + ftpUser + "\n");
+                        writer.write("quote PASS " + ftpPass + "\n");
+                        writer.write("lcd " + REPORTS_DIR + "\n");
+                        writer.write("cd /upload/A0001527/MVP_2_AUC\n");
+                        writer.write("put " + reportFile + "\n");
+                        writer.write("quit\n");
+                        writer.flush();
+                    }
+
+                    // 同步讀取 stdout，避免 pipe buffer 爆滿阻塞子程序
+                    StringBuilder outputBuilder = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            outputBuilder.append(line).append("\n");
+                        }
+                    }
+
+                    boolean finished = process.waitFor(60, TimeUnit.SECONDS);
+                    if (!finished) {
+                        log.error("FTP upload timed out after 60s, killing process");
+                        process.destroyForcibly();
+                    } else {
+                        int exitCode = process.exitValue();
+                        log.info("FTP process exited with code: {}", exitCode);
+                        if (exitCode != 0) {
+                            log.error("FTP upload failed!\n{}", outputBuilder);
+                        }
+                    }
+
+                    log.debug("FTP output:\n{}", outputBuilder);
+
+                } catch (IOException | InterruptedException e) {
+                    Throwable cause = (e instanceof InterruptedException) ? e : e;
+                    if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+                    log.error("FTP upload error", e);
+                    throw new Exception("FTP upload failed", e);
+                } finally {
+                    if (process != null && process.isAlive()) {
+                        process.destroyForcibly();
+                    }
+                }
+                
             }
-
-            // 等待程序結束並取得回傳碼
-            int exitCode = process.waitFor();
-            log.info("FTP process exited with code: {}", exitCode);
         }
+        else {
+        	 log.error("FTP credentials are empty, cannot upload. ftpUser={}, ftpPass={}", StringUtils.isEmpty(ftpUser) ? "(empty)" : "***", StringUtils.isEmpty(ftpPass) ? "(empty)" : "***");
+        }
+        
     }
 
     /**
@@ -355,7 +410,14 @@ public class GenAiCallingRptServ {
         drainStream(process.getInputStream());
         // 讀取 stderr 避免程序阻塞
         drainStream(process.getErrorStream());
-        int exitCode = process.waitFor();
+        
+        boolean finished = process.waitFor(300, TimeUnit.SECONDS);  // 5分鐘上限
+        if (!finished) {
+            process.destroyForcibly();
+            throw new RuntimeException("Command timed out: " + cmd);
+        }
+        int exitCode = process.exitValue();
+        
         if (exitCode != 0) {
             throw new RuntimeException("Command failed with exit code " + exitCode + ": " + cmd);
         }
@@ -380,7 +442,14 @@ public class GenAiCallingRptServ {
         }
         // 讀取 stderr 避免程序阻塞（內容丟棄）
         drainStream(process.getErrorStream());
-        int exitCode = process.waitFor();
+        
+        boolean finished = process.waitFor(300, TimeUnit.SECONDS);  // 5分鐘上限
+        if (!finished) {
+            process.destroyForcibly();
+            throw new RuntimeException("Command timed out: " + cmd);
+        }
+        int exitCode = process.exitValue();
+        
         if (exitCode != 0) {
             throw new RuntimeException("Command failed with exit code " + exitCode + ": " + cmd);
         }

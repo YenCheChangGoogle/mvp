@@ -44,8 +44,13 @@ default.job.5=1
 GenAiCallingRptServ.FTP_IP=xxx.xxx.xxx.xxx
 #要下載AI外撥回饋檔案 的FTP伺服器的IP
 ImportAiResultServ.FTP_IP=xxx.xxx.xxx.xxx
-#設定 mvpadm 使用者的家目錄 /home/mvpadm
+
 mvp.home.dir=/home/mvpadm
+mvp.report.dir=/home/mvpadm/reports
+mvp.sh.dir=/home/mvpadm/sh
+
+#指定要建立的外撥檔案名稱 前綴字眼
+mvp.ai_calling_filename_prefix=AI_CALLING_
 
 # fubon.mailhunter
 default.url.1=http://172.17.203.4/mailhunter_api/SendNow.asmx
