@@ -256,22 +256,6 @@ public class EmailMaster extends SidClass {
 			return false;
 		}
 	}
-	
-    /**
-     * 5. 輸入格式檢查(MVP110008)。(2026/05/30 11:30)
-     * @return 布林值
-     */
-    public boolean invalid110008() {
-        // 必填欄位檢查：UUID、ID、ID_TYPE、AFTER_EMAIL
-        if (EmptyUtil.is(this.uuid, this.idNo, this.idType, this.afterEmail)) {
-            return true;
-        }
-        // 狀態檢查：必須是 "00"(處理中) 或 "13"(客戶收到)
-        if (!"00".equals(this.status) && !"13".equals(this.txStatus)) {
-            return true;
-        }
-        return false;
-    }
     
 	//------------------------------------------------------------------------------
 	// 讀寫子

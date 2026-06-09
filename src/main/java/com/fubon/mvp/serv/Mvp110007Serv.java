@@ -106,6 +106,8 @@ public class Mvp110007Serv {
 	//每天凌晨 00:30:00 執行一次
     @Scheduled(cron = "0 30 0 * * ?", zone = "Asia/Taipei")
 	public void schedule() {
+    	
+    	log.info("█ █ █ █ █ 處理六日未回覆AI外撥 █ █ █ █ █");
 		
         if (! this.job) {
             return;

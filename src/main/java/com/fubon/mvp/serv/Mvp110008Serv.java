@@ -1,12 +1,9 @@
-package com.fubon.mvp.serv;
+﻿package com.fubon.mvp.serv;
 
 import java.util.List;
 
 import javax.annotation.PostConstruct;
 
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +13,17 @@ import org.springframework.stereotype.Service;
 
 import com.fubon.mvp.dao.EmailDao;
 import com.fubon.mvp.dao.EmailHostDao;
+import com.fubon.mvp.dao.EmailImageDao;
 import com.fubon.mvp.data.EmailDetail;
+import com.fubon.mvp.data.EmailImage;
 import com.fubon.mvp.data.EmailMaster;
 
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+
 import page2020.core.Log;
+import page2020.util.EmptyUtil;
 
 /**
  * 富邦MVP-MVP110008(三日未回覆重發驗證信)服務器
@@ -42,10 +46,10 @@ public class Mvp110008Serv {
     @Autowired
     private EmailHostDao hostDao;
     @Autowired
-    private EmailStatusServ service;
+    private EmailImageDao imageDao;
     
     /**
-     * 1. 初始程序。
+     * 1. 初始程序
      */
     @PostConstruct
     public void initial() {
@@ -57,82 +61,92 @@ public class Mvp110008Serv {
         }
     }
     
+    @Autowired
+    private EmailStatusServ emailStatusService;
+    
     /**
-     * 2. 即時交易服務。
+     * 2. 即時交易服務
      * @param doc 上行XML文件
      * @return 下行電文
      * 
      * 上行XML文件 範例 
-     * <REQUEST>
-     *   <UUID>1234567890abcdef1234567890abcdef</UUID>
-     *   <BRANCH>001</BRANCH>
-     *   <TELLER_NO>9999</TELLER_NO>
-     *   <CHNL>01</CHNL>
-     *   <SUB_CHNL>01</SUB_CHNL>
-     *   <CUST_ID>A123456789</CUST_ID>
-     *   <ID_TYPE>1</ID_TYPE>
-     *   <CUST_NAME>王小明</CUST_NAME>
-     *   <ENG_NAME>WANG XIAO MING</ENG_NAME>
-     *   <PREV_EMAIL_ADDR>old@example.com</PREV_EMAIL_ADDR>
-     *   <AFTER_EMAIL_ADDR>new@example.com</AFTER_EMAIL_ADDR>
-     *   <ON_OFF_LINE>Y</ON_OFF_LINE>
-     *   <REASON>未回覆驗證信</REASON>
-     *   <REMARK>三日未回覆重發驗證信</REMARK>
-     *   <QUERY_UUID></QUERY_UUID>
-     *   <FROM_DATE></FROM_DATE>
-     *   <TO_DATE></TO_DATE>
-     *   <NEXT_KEY></NEXT_KEY>
-     * </REQUEST>
+     *<REQUEST>
+     *	<UUID>1234567890abcdef1234567890abcdef</UUID>
+     *  <BRANCH>001</BRANCH>
+     *  <TELLER_NO>9999</TELLER_NO>
+     *  <CHNL>01</CHNL>
+     *  <SUB_CHNL>01</SUB_CHNL>
+     *  <CUST_ID>A123456789</CUST_ID>
+     *  <ID_TYPE>1</ID_TYPE>
+     *  <CUST_NAME>王小明</CUST_NAME>
+     *  <ENG_NAME>WANG XIAO MING</ENG_NAME>
+     *  <PREV_EMAIL_ADDR>old@example.com</PREV_EMAIL_ADDR>
+     *  <AFTER_EMAIL_ADDR>new@example.com</AFTER_EMAIL_ADDR>
+     *  <ON_OFF_LINE>Y</ON_OFF_LINE>
+     *  <REASON>未回覆驗證信</REASON>
+     *  <REMARK>三日未回覆重發驗證信</REMARK>
+     *  <QUERY_UUID></QUERY_UUID>
+     *  <FROM_DATE></FROM_DATE>
+     *  <TO_DATE></TO_DATE>
+     *  <NEXT_KEY></NEXT_KEY>
+     *</REQUEST>
      *  
      */
     public String service(Document doc) {
 
         log.info("inbound: " + doc.asXML());
 
-        // 1. 設定驗證變數。
+        // 1. 設定驗證變數
         boolean valid = false;
         boolean business = true;
         boolean database = false;
 
-        // 2. 創建上行電文實體。
-        EmailMaster master = new EmailMaster(doc, "110008");    // 交易代號：110008。
+        // 2. 創建上行電文實體
+        EmailMaster master = new EmailMaster(doc, "110008");    // 交易代號：110008
         log.info(master.toString());
 
-        // 3. 檢查輸入格式。
-        if (master.invalid110008()) {
+        // 3. 檢查輸入格式
+        // 必填欄位檢查：UUID、ID、ID_TYPE、AFTER_EMAIL
+        if (EmptyUtil.is(master.getUuid(), master.getIdNo(), master.getIdType(), master.getAfterEmail())) {
+            
             log.warn("check : (110008) argument errors.");
-            return this.service.response(doc, valid, business, database, true).asXML();
+            return this.emailStatusService.response(doc, valid, business, database, true).asXML();
         }
         valid = true;
 
         // 4. 設定初始狀態
-        master.setFlag("1");            // "1": 重發標記。
-        master.setStatus("00");         // "00": 處理中。
-        master.setTxStatus("13");       // "13": 逾期3日未回覆。
-        master.setErrorCode("");        // 清除錯誤碼。
-        master.setTranCode("110008");   // 交易代號：110008。
+        master.setFlag("1");            // "1": 重發標記
+        master.setStatus("00");         // "00": 處理中
+        master.setTxStatus("13");       // "13": 逾期3日未回覆
+        master.setErrorCode("");        // 清除錯誤碼
+        master.setTranCode("110008");   // 交易代號：110008
 
         // 5. 儲存記錄到資料庫
-        // (1) 主檔紀錄。
+        
+        //主檔紀錄 EMAILMAS
         Exception ex = this.dao.save(master);
         if (ex != null) {
-            log.warn("database: email master error.");
-            return this.service.response(doc, valid, business, database, true, ex.toString()).asXML();
+            log.warn("database: email master error");
+            return this.emailStatusService.response(doc, valid, business, database, true, ex.toString()).asXML();
         }
-        // (2) 明細檔紀錄。
+        //明細檔紀錄 EMAILDTL
         ex = this.dao.save(new EmailDetail(master));
         if (ex != null) {
-            log.warn("database: email detail error.");
-            return this.service.response(doc, valid, business, database, true, ex.toString()).asXML();
+            log.warn("database: email detail error");
+            return this.emailStatusService.response(doc, valid, business, database, true, ex.toString()).asXML();
         }
+        
+        //影像檔記錄 EMAILIMG
+        if(this.imageDao.save(new EmailImage(master))) {
+        	log.warn("database: email image error");
+        	return this.emailStatusService.response(doc, valid, business, database, true, "影像檔記錄 EMAILIMG 儲存異常").asXML();
+        }
+        
         database = true;
 
-        // 6. 呼叫統一處理方法 (處理逾期3日的記錄)
-        processOverdueRecord(master);
-
-        // 7. 返回下行電文。
+        // 6. 返回下行電文
         log.info("Mvp110008Serv : OK !");
-        return this.service.response(doc, valid, business, database, true).asXML();
+        return this.emailStatusService.response(doc, valid, business, database, true).asXML();
     }
     
     /**
@@ -142,64 +156,60 @@ public class Mvp110008Serv {
      */
     public boolean processOverdueRecord(EmailMaster master) {
     	
-    	String dummyXml = "<Tx><TxHead><HTXTID>110008</HTXTID></TxHead></Tx>";
-        Document dummyDoc = null;
-        //需要匯入 org.dom4j.DocumentHelper
-        try {
-			dummyDoc = DocumentHelper.parseText(dummyXml);
-		} catch (DocumentException e) {
-            return false;
-		}
-        
-        // 1. 再查一次 DB，避免時間差。
+    	log.info("█ █ █ █ █ 處理逾時3日未回覆 █ █ █ █ █");
+    	
+        // 1. 再查一次 DB, 避免時間差
         EmailMaster current = this.dao.uuid(master.getUuid());
         if (current == null) {
+            log.warn("check : (110008) entity was missing.");
             return false;
         }
-
-        // 2. 確認狀態：status="00" 且 txStatus="13"。
+        // 2. 確認狀態：status="00" 且 txStatus="13"
         if (! "00".equals(current.getStatus())) {
+        	log.warn("目前status="+current.getStatus()+" 處理逾時3日未回覆的記錄 狀態必須 status=00 且 txStatus=13");
             return false;
         }
         if (! "13".equals(current.getTxStatus())) {
+        	log.warn("目前txStatus="+current.getTxStatus()+" 處理逾時3日未回覆的記錄 狀態必須 status=00 且 txStatus=13");
             return false;
         }
 
-        //TODO 三日未回撥 重發驗證信
-        // 3. 更新資料庫。
-        current.setFlag("1");           // "1": 重發標記。
-        current.setTranCode("110008");  // 交易代號：110008。
-        current.setStatus("00");        // "00": 處理中。
-        current.setTxStatus("01");      // "01": 收到申請。
-        current.setErrorCode("");       // 清除錯誤碼。
+        //三日未回撥 重發驗證信
+        // 3. 更新資料庫
+        current.setFlag("1");           // "1": 重發標記
+        current.setTranCode("110008");  // 交易代號：110008
+        current.setStatus("00");        // "00": 處理中
+        current.setTxStatus("01");      // "01": 收到申請
+        current.setErrorCode("");       // 清除錯誤碼
         
-        //TODO EMAILMAS
+        //主檔紀錄 EMAILMAS
         Exception ex = this.dao.save(current);
         if (ex != null) {
-            log.warn("database: email master error.");
-            this.service.response(dummyDoc, true, true, false, true, ex.toString());
+            log.warn("database: email master error");
             return false;
         }
         
-        //TODO EMAILDTL
+        //明細檔紀錄 EMAILDTL
         ex = this.dao.save(new EmailDetail(current));
         if (ex != null) {
-            log.warn("database: email detail error.");
-            this.service.response(dummyDoc, true, true, false, true, ex.toString());
+            log.warn("database: email detail error");
             return false;
         }
 
-        log.info("Mvp110008Serv : retry OK ! uuid='" + current.getUuid() + "'");
-
-        // 4. 返回下行電文。
-        this.service.response(dummyDoc, true, true, true, true);
+        //影像檔記錄 EMAILIMG
+        if(this.imageDao.save(new EmailImage(current))) {
+        	log.warn("database: email image error");
+        	return false;
+        }
+        
+        log.info("Mvp110008Serv : uuid='" + current.getUuid() + "'");
         return true;
     }
 
     /**
-     * 3. 定時執行。
+     * 3. 定時執行
      *    三日未回覆重發驗證信：
-     *    將 TX_STATUS="13" 且 D-3 的記錄推回 TX_STATUS="01"，由 MVC110001 重新觸發流程。
+     *    將 TX_STATUS="13" 且 D-3 的記錄推回 TX_STATUS="01", 由 MVC110001 重新觸發流程
      */
     //300秒
     //@Scheduled(fixedDelay=300000)
@@ -228,13 +238,13 @@ public class Mvp110008Serv {
             return;
         }
         
-        // 2. 搜尋逾時未回覆清單。
+        // 2. 搜尋逾時未回覆清單
         List<EmailMaster> entities = this.dao.findOverdue3DaysAiCalling();
         if (entities.size() == 0) {
             return;
         }
         
-        // 3. 處理逾時清單。
+        // 3. 處理逾時清單
         for (EmailMaster master : entities) {
             try {
                 // 呼叫處理單筆的方法
