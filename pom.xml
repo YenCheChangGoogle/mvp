@@ -76,7 +76,7 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
-		
+
 		<!-- log4j -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -103,7 +103,7 @@
 			<scope>provided</scope>
 			<type>pom</type>
 		</dependency>
-		
+
 		<!-- secure -->		
 		<dependency> 
 			<groupId>org.apache.taglibs</groupId> 
@@ -135,7 +135,7 @@
 			<artifactId>jasypt-spring-boot-starter</artifactId>
 			<version>3.0.5</version>
 		</dependency>
-		        
+
 		<!-- client -->
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit -->
 		<dependency>
@@ -147,6 +147,7 @@
 			<artifactId>xalan</artifactId>
 			<version>2.7.3</version>
 		</dependency>
+		
 		<!-- https://mvnrepository.com/artifact/dom4j/dom4j -->
 		<dependency>
 			<groupId>org.dom4j</groupId>
@@ -213,7 +214,7 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<!-- SpringBoot2.7.18是配合到8.0.33 -->
 		<!--
 		<dependency>
@@ -265,7 +266,7 @@
 											file="src/main/resources/application.properties-test"
 											tofile="${project.build.outputDirectory}/application.properties"
 											overwrite="true" />
-										
+
 										<!-- 刪除輸出目錄下的 application.properties-test -->
 										 <delete file="${project.build.outputDirectory}/application.properties-test" />
 									</target>
@@ -311,8 +312,8 @@
 											file="src/main/resources/application.properties-prod"
 											tofile="${project.build.outputDirectory}/application.properties"
 											overwrite="true" />
-											
-										 <!-- 刪除輸出目錄下的 application.properties-prod -->
+
+										<!-- 刪除輸出目錄下的 application.properties-prod -->
 										 <delete file="${project.build.outputDirectory}/application.properties-prod" />
 									</target>
 								</configuration>
