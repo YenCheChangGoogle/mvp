@@ -93,6 +93,8 @@ public class Mvp110007Serv {
 	public void initial() {
 		this.job = "1".equals(this.defaultJob4); // 啓動JOB開關
 
+		this.notEsbCode = this.error.notEsb()[0];	// "E010": 無法連綫。
+		
 		if (Log.test) {
 			log.info("initial: mvp110007");
 		}
