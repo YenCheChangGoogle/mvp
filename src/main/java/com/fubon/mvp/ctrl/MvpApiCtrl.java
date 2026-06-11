@@ -5,6 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fubon.mvp.serv.ImportAiResultToProcessServ;
@@ -19,8 +20,10 @@ import com.fubon.mvp.serv.Mvc310002Serv;
 import com.fubon.mvp.serv.Mvp110007Serv;
 import com.fubon.mvp.serv.Mvp110008Serv;
 
-import jdk.internal.org.jline.utils.Log;
 import page2020.client.WebProxy;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 富邦MVP- MVP 控制器
@@ -31,6 +34,8 @@ import page2020.client.WebProxy;
 @RequestMapping("/api")
 public class MvpApiCtrl {
 
+	private static Logger log = LoggerFactory.getLogger(MvpApiCtrl.class);
+	
 	@Autowired
 	private WebProxy proxy;
 	@Autowired
@@ -163,11 +168,16 @@ public class MvpApiCtrl {
 	 * @return 處理結果訊息
 	 */
 	//http://localhost:8080/mvp/api/mvp110008
-	@PostMapping(value = "mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
+	//@PostMapping(value = "mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
+	@RequestMapping(
+		    value = "mvp110008",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
 	public String mvp110008() {
-		Log.info("三日未回覆 重發驗證信");
+		log.info("三日未回覆 重發驗證信");
 
-		mvp110008Serv.schedule();
+		//mvp110008Serv.schedule();
 		return "<response><status>success</status><message>mvp110008</message></response>";
 	}
 	
@@ -176,9 +186,14 @@ public class MvpApiCtrl {
 	 * 
 	 */
 	//http://localhost:8080/mvp/api/mvp110007
-	@PostMapping(value = "/mvp110007", produces = MediaType.APPLICATION_XML_VALUE)
+	//@PostMapping(value = "/mvp110007", produces = MediaType.APPLICATION_XML_VALUE)
+	@RequestMapping(
+		    value = "/mvp110007",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
 	public String mvp110007() {
-		Log.info("6日未回覆 AI外撥處理");
+		log.info("6日未回覆 AI外撥處理");
 
 		mvp110007Serv.schedule();
 		return "<response><status>success</status><message>mvp110007</message></response>";
@@ -193,7 +208,7 @@ public class MvpApiCtrl {
 	//http://localhost:8080/mvp/api/airesult/import
 	@PostMapping(value = "/airesult/import", produces = MediaType.APPLICATION_XML_VALUE)
 	public String aiResultImport(@RequestBody String excelFilePath) {
-	    Log.info("AI結果報表導入 - 解析 Excel 並更新 相關資資料");
+		log.info("AI結果報表導入 - 解析 Excel 並更新 相關資資料");
 
 	    StringBuilder result = new StringBuilder();
 	    result.append("<response>");

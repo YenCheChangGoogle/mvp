@@ -195,12 +195,21 @@ public class Mvp110008Serv {
             log.warn("database: email detail error");
             return false;
         }
-
+        
+        //待討論
+        /*
+        if(current.getChannel()==null) {
+            current.setChannel("-");
+        }
+        if(current.getSubChannel()==null) {
+            current.setSubChannel("-");
+        }
         //影像檔記錄 EMAILIMG
         if(this.imageDao.save(new EmailImage(current))) {
         	log.warn("database: email image error");
         	return false;
         }
+        */
         
         log.info("Mvp110008Serv : uuid='" + current.getUuid() + "'");
         return true;
@@ -245,6 +254,7 @@ public class Mvp110008Serv {
         }
         
         // 3. 處理逾時清單
+        log.info("處理逾時清單 目前人數 "+entities.size()+" 人");
         for (EmailMaster master : entities) {
             try {
                 // 呼叫處理單筆的方法

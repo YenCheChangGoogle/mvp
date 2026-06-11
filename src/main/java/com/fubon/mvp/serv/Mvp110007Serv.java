@@ -127,7 +127,8 @@ public class Mvp110007Serv {
 		List<EmailMaster> jobList = new ArrayList<EmailMaster>();
 		
 		// (2.1) 查詢逾期 6日 未回覆清單
-		//SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -6, GETDATE()), 112) AND FLAG = '1' ORDER BY ID
+		//SQLServer語法:	SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -6, GETDATE()), 112) AND FLAG = '1' ORDER BY ID
+		//MySQL語法:		SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 6 DAY) AND FLAG = '1' ORDER BY ID
 		List<EmailMaster> expiredList = this.dao.findOverdue6DaysAiCalling();
 		if (! expiredList.isEmpty()) {
 			jobList.addAll(expiredList);
@@ -152,7 +153,7 @@ public class Mvp110007Serv {
 				log.warn("check : (110007) entity was missing, uuid=" + item.getUuid());
 				continue;
 			}
-			log.info("before : " + master.toString());
+			log.info("6日未回覆 處理階段1 : " + master.toString());
 
 			// (3.2) 確認狀態是否符合處理條件。
 			boolean isOverdue = "00".equals(master.getStatus()) && "13".equals(master.getTxStatus());
@@ -172,8 +173,14 @@ public class Mvp110007Serv {
 			master.setErrorCode("");
 			this.dao.save(master);
 			this.dao.save(new EmailDetail(master));
-			this.imageDao.save(new EmailImage(master));
-			log.info("after : " + master.toString());
+			
+			//待討論
+			EmailImage emailImage=new EmailImage(master);
+			if(emailImage.getChannel()==null) emailImage.setChannel("-");
+			if(emailImage.getSubChannel()==null) emailImage.setSubChannel("-");
+			this.imageDao.save(emailImage);
+			
+			log.info("6日未回覆 處理階段2 : " + master.toString());
 
 			// (3.4) 組合上行電文
 			Document doc = this.tranx(master);
@@ -183,7 +190,7 @@ public class Mvp110007Serv {
 			String xml = null;
 			try {
 				xml = this.proxy.api("esb").body(Mono.just(doc.asXML()), String.class).retrieve().bodyToMono(String.class).block();
-				log.info("response: " + xml);
+				log.info("6日未回覆 處理階段3 (呼叫電文中) : " + master.toString()+"電文回應內容="+xml);
 			} catch (Exception ex) {
 				// ESB無法連綫,保留失敗狀態供下次重試
 				if (! ("02".equals(oldStatus) && this.notEsbCode.equals(oldError))) {
@@ -191,13 +198,20 @@ public class Mvp110007Serv {
 					master.setErrorCode(this.notEsbCode);
 					this.dao.save(master);
 					this.dao.save(new EmailDetail(master));
-					this.imageDao.save(new EmailImage(master));
+					
+					//待討論
+					emailImage=new EmailImage(master);
+					if(emailImage.getChannel()==null) emailImage.setChannel("-");
+					if(emailImage.getSubChannel()==null) emailImage.setSubChannel("-");
+					this.imageDao.save(emailImage);
+					
 				}
-				log.error("ESB disconnected: " + ex.toString());
+				log.error("6日未回覆 處理階段3 (呼叫電文中發生例外) 暫時略過此筆 : " + master.toString()+" 例外訊息="+ex.toString());
 				continue;
 			}
 
 			// (3.6) 解析下行電文並設定執行狀態值
+			log.info("6日未回覆 處理階段4 (解析下行電文並設定執行狀態值) : " + master.toString());
 			Document response = this.proxy.document(xml);
 			String errId = response.selectSingleNode("//HERRID").getText();
 			String message = null;
@@ -205,15 +219,18 @@ public class Mvp110007Serv {
 			// 更新 txStatus。
 			master.setTxStatus("61"); // "61": 已獲取核心資料
 			this.dao.save(master);
-
-			// 設定回傳結果
+			
+			log.info("6日未回覆 處理階段5 (解析下行電文) "+master.toString());
 			// ESB核心回傳成功("0000")
 			if ("0000".equals(errId)) {
-				// 成功:取得姓名與手機號碼。
-				String chName = this.proxy.value(response, "CH_NAME");
-				String telNo = this.proxy.value(response, "TEL_NO");
 				
-				//TODO FLAG維持不變 改成收到回饋檔案時候 客戶回覆是1才更新 FLAG=2
+				String chName = this.proxy.value(response, "CH_NAME"); //取得姓名
+				String telNo = this.proxy.value(response, "TEL_NO"); //取得手機號碼。
+				//String chName="測試";
+				//String telNo="1234567890";
+				
+				//待討論
+				//FLAG維持不變 改成收到回饋檔案時候 客戶回覆是1才更新 FLAG=2
 				//master.setFlag("2");
 				
 				//無客戶姓名 或 外撥電話號碼 皆略過
@@ -225,27 +242,31 @@ public class Mvp110007Serv {
 					master.setTxStatus("17"); // "17": AI外撥
 					master.setErrorCode("");
 					
-					log.info("未來準備AI外撥名單: uuid=" + master.getUuid() + ", chName=" + chName + ", telNo=" + telNo);
-					
+					message="準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
 				}
 				else {
 					master.setStatus("00"); // "00": 處理中
 					master.setErrorCode("chName 或 telNo 無值");
-					log.warn("Mvp110007Serv: fetch success, uuid=" + master.getUuid() + ", chName 或 telNo 無值");
+					
+					message="無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
 				}
+				log.info("6日未回覆 處理階段6 (呼叫電文中處置) "+message);
 			}
 			// 失敗
 			else {
 				master.setStatus("00");
 				master.setErrorCode(this.proxy.value(response, "EMSGID"));
-				message = this.proxy.value(response, "EMSGTXT");
-				log.error("呼叫電文 67050 失敗 fetch failed, uuid=" + master.getUuid() + ", errId=" + errId + ", message=" + message);
+				message="呼叫電文 67050 異常 " + master.toString() + ", errId=" + errId +" errorMsg=" + this.proxy.value(response, "EMSGTXT");
+				
+				log.error("6日未回覆 處理階段6 (呼叫電文中處置異常) "+message);
 			}
 
 			// 儲存資料庫
 			this.dao.save(master); //儲存主檔
 			this.dao.save(new EmailDetail(master)); //儲存紀錄
 			this.imageDao.save(new EmailImage(master)); //儲存呼叫電文紀錄
+			
+			log.info("6日未回覆 處理階段7 處置完畢 ");
 			
 		}
 	}

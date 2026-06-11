@@ -48,6 +48,9 @@ public class EmailHostDao {
 		String address = AddrUtil.address();
 		String hostname = AddrUtil.hostname();
 		this.entity = this.repo.findOneByAddressAndHostname(address, hostname);
+		
+        log.info("█ 目前執行的主機="+address+" "+hostname+" "+entity+" 若要啟用請於資料庫設定啟用判定");
+        
 		if (this.entity == null) {
 			
 			// 創建資料實體。

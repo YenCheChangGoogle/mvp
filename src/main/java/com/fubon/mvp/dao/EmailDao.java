@@ -230,6 +230,10 @@ public class EmailDao {
 	     java.util.Calendar cal = java.util.Calendar.getInstance();
 	     cal.add(java.util.Calendar.DAY_OF_MONTH, -6);
 	     String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+	     
 	     return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
+	     
+	     //List<EmailMaster> list=this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
+	     //return list;
 	}
 }
