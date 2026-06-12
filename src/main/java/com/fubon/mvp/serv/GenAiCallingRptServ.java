@@ -255,7 +255,12 @@ public class GenAiCallingRptServ {
         // 讀取加密檔並解密
         Path encPath = Paths.get(HOME, "mvpsqlserver.conf.enc");
         byte[] encryptedBytes = Files.readAllBytes(encPath);
-
+        
+        
+        
+        
+        
+        /*
         // openssl rsautl 的 block size 受限於 key size；大檔案需分塊解密
         int blockSize = (privateKey.getModulus().bitLength() / 8) - 11; // PKCS1 padding overhead
         ByteArrayOutputStream decryptedOutput = new ByteArrayOutputStream();
@@ -270,6 +275,15 @@ public class GenAiCallingRptServ {
 
         // 寫入解密後的設定檔
         Files.write(outputConfPath, decryptedOutput.toByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        */
+        
+        byte[] decrypted = cipher.doFinal(encryptedBytes);
+        Files.write(outputConfPath, decrypted, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        
+        
+        
+        
+        
         log.info("Decrypted mvpsqlserver.conf successfully.");
     }
 
@@ -434,7 +448,8 @@ public class GenAiCallingRptServ {
             try (InputStream localStream = Files.newInputStream(filePath)) {
                 boolean success = ftp.storeFile(fileName, localStream);
                 if (!success) {
-                    log.error("FTP upload failed for: {}", fileName);
+                    //log.error("FTP upload failed for: {}", fileName);
+                    throw new IOException("FTP upload failed for: " + fileName + ", server reply: " + ftp.getReplyString());
                 } else {
                     log.info("FTP upload completed: {}", fileName);
                 }

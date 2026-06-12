@@ -105,6 +105,7 @@ public class ImportAiResultServ {
     @Value("${mvp.download.dir:/home/mvpadm/download}")
     private String DOWNLOAD_DIR;
     
+    //待討論 處理的報表的目錄與原本報表目錄目前設同一個
     @Value("${mvp.processed.dir:/home/mvpadm/reports}")
     private String PROCESSED_DIR;
     
@@ -200,7 +201,7 @@ public class ImportAiResultServ {
                 // ※ 若 decode.sh 非 Base64，請修改 decodeFtpCredential()
                 String decoded = decodeFtpCredential(line.trim());
                 if (count == 0) ftpUser = decoded;
-                else            ftpPass = decoded;
+                else if (count == 1) { ftpPass = decoded; break; }
                 count++;
             }
 
@@ -217,6 +218,17 @@ public class ImportAiResultServ {
             if (!Files.exists(Paths.get(localFile))) {
                 throw new SkipExecutionException("要處置的檔案不存在：" + localFile);
             }
+            
+            /*
+            // 檢查檔案是否過期（12小時 = 43200秒）
+            long fileAgeSeconds = (System.currentTimeMillis() / 1000)
+                - Files.getLastModifiedTime(Paths.get(localFile)).to(java.util.concurrent.TimeUnit.SECONDS);
+            if (fileAgeSeconds > 43200) {
+                log.warn("檔案已過期（{} 秒前修改），跳過避免處理舊資料：{}", fileAgeSeconds, localFile);
+                throw new SkipExecutionException("File too old: " + localFile);
+            }
+            log.info("檔案時效確認：{} 秒前修改", fileAgeSeconds);
+            */
 
             // -----------------------------------------------------------------
             // 步驟 6：呼叫 Excel 處理服務（不變）
