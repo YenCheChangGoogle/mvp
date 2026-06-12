@@ -174,14 +174,15 @@ public class Mvp110007Serv {
 			this.dao.save(master);
 			this.dao.save(new EmailDetail(master));
 			
-			//待討論
+			/*
 			EmailImage emailImage=new EmailImage(master);
 			if(emailImage.getChannel()==null) emailImage.setChannel("-");
 			if(emailImage.getSubChannel()==null) emailImage.setSubChannel("-");
 			this.imageDao.save(emailImage);
 			
 			log.info("6日未回覆 處理階段2 : " + master.toString());
-
+			*/
+			
 			// (3.4) 組合上行電文
 			Document doc = this.tranx(master);
 			log.info("request: " + doc.asXML());
@@ -199,12 +200,12 @@ public class Mvp110007Serv {
 					this.dao.save(master);
 					this.dao.save(new EmailDetail(master));
 					
-					//待討論
+					/*
 					emailImage=new EmailImage(master);
 					if(emailImage.getChannel()==null) emailImage.setChannel("-");
 					if(emailImage.getSubChannel()==null) emailImage.setSubChannel("-");
 					this.imageDao.save(emailImage);
-					
+					*/
 				}
 				log.error("6日未回覆 處理階段3 (呼叫電文中發生例外) 暫時略過此筆 : " + master.toString()+" 例外訊息="+ex.toString());
 				continue;
@@ -229,7 +230,6 @@ public class Mvp110007Serv {
 				//String chName="測試";
 				//String telNo="1234567890";
 				
-				//待討論
 				//FLAG維持不變 改成收到回饋檔案時候 客戶回覆是1才更新 FLAG=2
 				//master.setFlag("2");
 				

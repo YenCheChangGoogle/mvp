@@ -412,7 +412,7 @@ public class GenAiCallingRptServ {
             return;
         }
 
-        String remoteDir = "/upload/A0001527/MVP_2_AUC";
+        String remoteDir = "/810SCOMM";
         uploadFileViaFtp(FTP_IP, ftpUser, ftpPass, REPORTS_DIR, remoteDir, reportFile);
     }
 

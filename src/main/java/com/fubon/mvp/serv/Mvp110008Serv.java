@@ -196,7 +196,6 @@ public class Mvp110008Serv {
             return false;
         }
         
-        //待討論
         /*
         if(current.getChannel()==null) {
             current.setChannel("-");
