@@ -178,6 +178,23 @@
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
 			<scope>runtime</scope>
+			
+			<!-- 如果跑的是 JDK 17 以上就改成 12.8.1.jre17 -->
+			<!-- <version>12.8.1.jre11</version> -->
+			
+		</dependency>
+
+		<!-- BouncyCastle Provider（AES 解密用） -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.79</version>
+		</dependency>
+		<!-- Apache Commons Net（FTP 上傳用） -->
+		<dependency>
+			<groupId>commons-net</groupId>
+			<artifactId>commons-net</artifactId>
+			<version>3.11.1</version>
 		</dependency>
 
 		<dependency>

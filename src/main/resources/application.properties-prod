@@ -49,6 +49,11 @@ mvp.home.dir=/home/mvpadm
 mvp.report.dir=/home/mvpadm/reports
 mvp.sh.dir=/home/mvpadm/sh
 
+#下載與處理的路徑
+mvp.download.dir=/home/mvpadm/download
+mvp.processed.dir=/home/mvpadm/reports
+mvp.calllist_filename_prefix=CallList_
+
 #指定要建立的外撥檔案名稱 前綴字眼
 mvp.ai_calling_filename_prefix=AI_CALLING_
 
@@ -63,9 +68,9 @@ jasypt.encryptor.iv-generator-classname=org.jasypt.iv.NoIvGenerator
 mvp.dialect=org.hibernate.dialect.SQLServer2012Dialect
 mvp.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
 mvp.datasource.maxActive=100
- mvp.datasource.url=jdbc:sqlserver://172.17.236.88:3301;databaseName=TFB_MVP_DB
- mvp.datasource.username=ENC(EurSKBoOJqSbkqoCB+2RvA==)
- mvp.datasource.password=ENC(HD0G+dH+n1SVuZ3HZlHl/2QYzPZC0z+R)
+mvp.datasource.url=jdbc:sqlserver://172.17.236.88:3301;databaseName=TFB_MVP_DB
+mvp.datasource.username=ENC(EurSKBoOJqSbkqoCB+2RvA==)
+mvp.datasource.password=ENC(HD0G+dH+n1SVuZ3HZlHl/2QYzPZC0z+R)
 #test mvp.datasource.url=jdbc:sqlserver://172.17.241.167:3301;databaseName=TFB_MVP_DB
 #test mvp.datasource.username=ENC(w72Km99BalBnnTV/JOz90A==)
 #test mvp.datasource.password=ENC(mCIhPIszWrAZxO72sMnIYdECGhEAT3X1)

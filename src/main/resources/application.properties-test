@@ -48,6 +48,11 @@ mvp.home.dir=/home/mvpadm
 mvp.report.dir=/home/mvpadm/reports
 mvp.sh.dir=/home/mvpadm/sh
 
+#下載與處理的路徑
+mvp.download.dir=/home/mvpadm/download
+mvp.processed.dir=/home/mvpadm/reports
+mvp.calllist_filename_prefix=CallList_
+
 #指定要建立的外撥檔案名稱 前綴字眼
 mvp.ai_calling_filename_prefix=AI_CALLING_
 

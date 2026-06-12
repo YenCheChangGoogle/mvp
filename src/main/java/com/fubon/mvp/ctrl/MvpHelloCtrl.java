@@ -67,9 +67,8 @@ public class MvpHelloCtrl {
 		this.times.put("310002", new Date());
 		this.times.put("084000", new Date());
 		this.times.put("084023", new Date());
-		
-		this.times.put("110007", new Date());
-		this.times.put("110008", new Date());
+		this.times.put("mvp110007", new Date());
+		this.times.put("mvp110008", new Date());
 		
 	}
 			

@@ -168,16 +168,16 @@ public class MvpApiCtrl {
 	 * @return 處理結果訊息
 	 */
 	//http://localhost:8080/mvp/api/mvp110008
-	//@PostMapping(value = "mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
+	//@PostMapping(value = "/mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
 	@RequestMapping(
-		    value = "mvp110008",
+		    value = "/mvp110008",
 		    method = {RequestMethod.GET, RequestMethod.POST},
 		    produces = MediaType.APPLICATION_XML_VALUE
 	)
 	public String mvp110008() {
 		log.info("三日未回覆 重發驗證信");
 
-		//mvp110008Serv.schedule();
+		mvp110008Serv.schedule();
 		return "<response><status>success</status><message>mvp110008</message></response>";
 	}
 	
