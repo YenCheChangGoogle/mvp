@@ -45,7 +45,11 @@ public class EmailDetail extends SidClass {
 	// 7. ERR_CODE
 	@Column(name="ERR_CODE", length=6)
 	private String errorCode;
-
+	
+	// 8. FLAG
+	@Column(name="FLAG", length=1)
+	private String flag;
+	
 	// 預設建構子
 	public EmailDetail() {
 		super();
@@ -64,6 +68,7 @@ public class EmailDetail extends SidClass {
 		this.responeTime = TimeUtil.timeE(new Date());
 		this.txStatus = master.getTxStatus();
 		this.errorCode = master.getErrorCode();
+		this.flag = master.getFlag();
 	}
 	
 	/**

@@ -111,8 +111,9 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
      *      return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc("00", "13", threshold);
      *    
      */
-	public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc(String status, String txStatus, String changeDate);
-	
+	//public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc(String status, String txStatus, String changeDate);
+	public List<EmailMaster> findByStatusAndTxStatusAndChangeDateEqualsOrderByChangeDateAsc(String status, String txStatus, String changeDate);
+
 	/**
 	 * 10.1. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
 	 *       條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
@@ -134,6 +135,21 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
      *       return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
      *       
      */
-    public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc(String status, String txStatus, String changeDate, String flag);
-    
+    //public List<EmailMaster> findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc(String status, String txStatus, String changeDate, String flag);
+
+	/**
+     * 10.3. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
+     *       條件：status="00" 且 txStatus="13" 且 changeDate 每周一執行一次且範圍是 D-28日 到 D-7日 且 flag="1"
+     *       
+     */       
+	List<EmailMaster> findByStatusAndTxStatusAndChangeDateBetweenAndFlagOrderByChangeDateAsc(String status, String txStatus, String startDate, String endDate, String flag);
+
+	/**
+     * 10.4. 查詢逾時未回覆清單 (六日未回覆AI外撥)。
+     *       條件：status="00" 且 txStatus="13" 且 changeDate 每周一執行一次且範圍是 (不含那日)D-28日 到 (不含那日)D-7日 且 flag="1"
+     *       
+     */
+	List<EmailMaster> findByStatusAndTxStatusAndChangeDateGreaterThanAndChangeDateLessThanAndFlagOrderByChangeDateAsc(String status, String txStatus, String startDate, String endDate, String flag);
+	
+	
 }

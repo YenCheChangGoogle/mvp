@@ -216,24 +216,51 @@ public class EmailDao {
 		java.util.Calendar cal = java.util.Calendar.getInstance();
 	    cal.add(java.util.Calendar.DAY_OF_MONTH, -3);
 	    String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
-	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanOrderByChangeDateAsc("00", "13", threshold);
+	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateEqualsOrderByChangeDateAsc("00", "13", threshold);
 	}
 
 	/**
-	 * 12. 查詢逾時未回覆清單 (六日未回覆AI外撥)
+	 * 12. 查詢逾時六回覆清單 (六日未回覆AI外撥)
 	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
+	 *     條件時間修改
+	 *     條件：status="00" 且 txStatus="13" 且 changeDate 每周一執行一次且範圍是 D-28日 到 D-7日 且 flag="1"
 	 * @return 清單
 	 */
 	public List<EmailMaster> findOverdue6DaysAiCalling() {
 		//return this.masterRepo.findOverdue6DaysAiCalling();
 		
-	     java.util.Calendar cal = java.util.Calendar.getInstance();
-	     cal.add(java.util.Calendar.DAY_OF_MONTH, -6);
-	     String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+		/*
+	    java.util.Calendar cal = java.util.Calendar.getInstance();
+	    cal.add(java.util.Calendar.DAY_OF_MONTH, -6);
+	    String threshold = page2020.util.TimeUtil.dateE(cal.getTime());
+	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
+	    */
+		
+		java.util.Calendar cal = java.util.Calendar.getInstance();
+
+	    //取得今天是星期幾
+	    int dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK);
+
+	    //只在星期一執行
+	    if (dayOfWeek != java.util.Calendar.MONDAY) {
+	        return java.util.Collections.emptyList();
+	    }
+
+	    //D-28
+	    java.util.Calendar calStart = (java.util.Calendar) cal.clone();
+	    calStart.add(java.util.Calendar.DAY_OF_MONTH, -28);
+	    String startDate = page2020.util.TimeUtil.dateE(calStart.getTime());
+
+	    //D-7
+	    java.util.Calendar calEnd = (java.util.Calendar) cal.clone();
+	    calEnd.add(java.util.Calendar.DAY_OF_MONTH, -7);
+	    String endDate = page2020.util.TimeUtil.dateE(calEnd.getTime());
+
+	    //查詢範圍 between  (含指定起訖日)
+	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateBetweenAndFlagOrderByChangeDateAsc("00", "13", startDate, endDate, "1");
+	    
+	    //查詢範圍 between (不含指定起訖日)
+	    //return this.masterRepo.findByStatusAndTxStatusAndChangeDateGreaterThanAndChangeDateLessThanAndFlagOrderByChangeDateAsc"00", "13", startDate, endDate, "1");
 	     
-	     return this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
-	     
-	     //List<EmailMaster> list=this.masterRepo.findByStatusAndTxStatusAndChangeDateLessThanAndFlagOrderByChangeDateAsc("00", "13", threshold, "1");
-	     //return list;
 	}
 }

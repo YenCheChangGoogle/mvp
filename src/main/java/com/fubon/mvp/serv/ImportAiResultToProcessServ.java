@@ -403,24 +403,24 @@ public class ImportAiResultToProcessServ {
 	 */
 	private void handleChoice2(EmailMaster master, AiResultRow aiRow) {
 
-		// ★ EMAILDTL 第1筆：記錄 AI 外撥回饋
+		// EMAILDTL 第1筆：記錄 AI 外撥回饋
 		EmailDetail ed = new EmailDetail(master);
 		ed.setTxStatus("19"); // TX_STATUS=19 (AI 外撥回饋)
 		this.dao.save(ed);
 
-		// ★ EMAILMAS 更新主檔狀態
-		master.setTranCode("110001"); // 交易代碼
-		master.setStatus("01");        // 01=全部流程完成
-		master.setTxStatus("00");      // 00=全部完成 (結束流程)
-		master.setFlag("2");           // FLAG=2 (已獲取)
-		master.setErrorCode("");       // 清除錯誤碼
+		// EMAILMAS 更新主檔狀態
+		master.setTranCode("110001");
+		master.setStatus("00");
+		master.setTxStatus("13");
+		master.setFlag("1");
+		master.setErrorCode("");
 		this.dao.save(master);
 
-		// ★ EMAILDTL 第2筆：記錄狀態變更
+		// EMAILDTL 第2筆：記錄狀態變更
 		ed = new EmailDetail(master);
 		this.dao.save(ed);
 
-		// ★ EMAILIMG 新增影像記錄
+		// EMAILIMG 新增影像記錄
 		this.imageDao.save(new EmailImage(master));
 	}
 

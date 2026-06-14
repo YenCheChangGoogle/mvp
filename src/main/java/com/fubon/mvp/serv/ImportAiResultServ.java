@@ -207,7 +207,8 @@ public class ImportAiResultServ {
 
             if (StringUtils.isNotBlank(ftpUser) && StringUtils.isNotBlank(ftpPass)) {
                 Files.createDirectories(Paths.get(DOWNLOAD_DIR));
-                downloadFromFtp(FTP_IP, ftpUser, ftpPass, "/810SUPLOAD", aiFilename, localFile);
+                //TODO 下載的伺服器路徑
+                downloadFromFtp(FTP_IP, ftpUser, ftpPass, "/MVP/810SUPLOAD", aiFilename, localFile);
             } else {
                 log.warn("ftp.ini 無法取得足夠帳號密碼，跳過 FTP 下載");
             }

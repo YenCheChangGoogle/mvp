@@ -195,7 +195,7 @@ public class GenAiCallingRptServ {
                 "       'NA' as SMS5,\n" +
                 "       'NA' as SMSDefault\n" +
                 "from EMAILMAS \n" +
-                "where FLAG='2' AND PHONE IS NOT NULL AND PHONE <> '';";
+                "where STATUS='00' AND TX_STAUT='17' AND PHONE IS NOT NULL AND PHONE <> '';";
 
             exportCsvData(ip, port, database, user, password, dataQuery, reportPath);
 
@@ -411,8 +411,9 @@ public class GenAiCallingRptServ {
             log.error("Local file not found: {}", localFile.getAbsolutePath());
             return;
         }
-
-        String remoteDir = "/810SCOMM";
+        
+        //TODO 上傳路徑
+        String remoteDir = "/MVP/810SCOMM";
         uploadFileViaFtp(FTP_IP, ftpUser, ftpPass, REPORTS_DIR, remoteDir, reportFile);
     }
 

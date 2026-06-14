@@ -135,10 +135,10 @@ public class Mvp110007Serv {
 		}
 		
 		// (2.2) 重試:之前 ESB 無法連綫失敗的記錄 (status="02" 且 txStatus="60" 且 errorCode="E010")
-		List<EmailMaster> errorList = this.dao.error("02", "60", this.notEsbCode);
-		if (! errorList.isEmpty()) {
-			jobList.addAll(errorList);
-		}
+		//List<EmailMaster> errorList = this.dao.error("02", "60", this.notEsbCode);
+		//if (! errorList.isEmpty()) {
+		//	jobList.addAll(errorList);
+		//}
 		
 		if (jobList.isEmpty()) {
 			return;
@@ -157,7 +157,7 @@ public class Mvp110007Serv {
 
 			// (3.2) 確認狀態是否符合處理條件。
 			boolean isOverdue = "00".equals(master.getStatus()) && "13".equals(master.getTxStatus());
-			boolean isRetry = "02".equals(master.getStatus()) && "60".equals(master.getTxStatus())  && this.notEsbCode.equals(master.getErrorCode());
+			boolean isRetry = "02".equals(master.getStatus()) && "80".equals(master.getTxStatus())  && this.notEsbCode.equals(master.getErrorCode());
 
 			if (! isOverdue && ! isRetry) {
 				log.warn("check : (110007) was NOT necessary, uuid=" + master.getUuid());
@@ -169,7 +169,7 @@ public class Mvp110007Serv {
 			String oldError = master.getErrorCode();
 			master.setTranCode("067050");
 			master.setStatus("00");		// "00": 處理中
-			master.setTxStatus("60");	// "60": 請求核心資料中
+			master.setTxStatus("80");	// "80": 請求核心資料中 (呼叫電文取 姓名 與 電話)
 			master.setErrorCode("");
 			this.dao.save(master);
 			this.dao.save(new EmailDetail(master));
@@ -196,6 +196,7 @@ public class Mvp110007Serv {
 				// ESB無法連綫,保留失敗狀態供下次重試
 				if (! ("02".equals(oldStatus) && this.notEsbCode.equals(oldError))) {
 					master.setStatus("02");
+					master.setTxStatus("80");
 					master.setErrorCode(this.notEsbCode);
 					this.dao.save(master);
 					this.dao.save(new EmailDetail(master));
@@ -218,7 +219,7 @@ public class Mvp110007Serv {
 			String message = null;
 
 			// 更新 txStatus。
-			master.setTxStatus("61"); // "61": 已獲取核心資料
+			master.setTxStatus("81"); // "81": 已獲取核心資料
 			this.dao.save(master);
 			
 			log.info("6日未回覆 處理階段5 (解析下行電文) "+master.toString());
