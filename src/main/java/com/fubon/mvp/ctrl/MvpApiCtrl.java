@@ -17,6 +17,7 @@ import com.fubon.mvp.serv.Mvc110006Serv;
 import com.fubon.mvp.serv.Mvc110007Serv;
 import com.fubon.mvp.serv.Mvc310001Serv;
 import com.fubon.mvp.serv.Mvc310002Serv;
+import com.fubon.mvp.serv.Mvc310003Serv;
 import com.fubon.mvp.serv.Mvp110007Serv;
 import com.fubon.mvp.serv.Mvp110008Serv;
 
@@ -52,6 +53,8 @@ public class MvpApiCtrl {
 	private Mvc310001Serv mvc310001;
 	@Autowired
 	private Mvc310002Serv mvc310002;
+	@Autowired
+	private Mvc310003Serv mvc310003;
 	@Autowired
 	private Mvc084000Serv mvc084000;
 	
@@ -222,6 +225,16 @@ public class MvpApiCtrl {
 	    }
 	    result.append("</response>");
 	    return result.toString();
+	}
+	
+	/**
+	 * 11. MVC310003 - (查詢明細)
+	 * @param xml 上行電文
+	 * @return 下行電文
+	 */
+	@PostMapping("/310003")
+	public String mvc310003(@RequestBody String xml) {
+		return mvc310003.service(this.proxy.document(xml));
 	}
 	
 }

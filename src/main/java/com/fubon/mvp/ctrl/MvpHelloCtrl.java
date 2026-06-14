@@ -69,7 +69,7 @@ public class MvpHelloCtrl {
 		this.times.put("084023", new Date());
 		this.times.put("mvp110007", new Date());
 		this.times.put("mvp110008", new Date());
-		
+		this.times.put("310003", new Date());
 	}
 			
 	/**
@@ -221,7 +221,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * (SIT) 測試 MVC310002 連綫(NEXT_KEY)。
+	 * 7. (SIT) 測試 MVC310002 連綫(NEXT_KEY)。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/nextkey310002/{id}/{nextkey}")
@@ -239,7 +239,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 7. 測試 MVC084000 連綫。
+	 * 8. 測試 MVC084000 連綫。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/084000")
@@ -255,7 +255,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 8. 測試 MVP084023 連綫。
+	 * 9. 測試 MVP084023 連綫。
 	 * @return 電文或日期。
 	 */
 	//http://localhost:8080/mvp/api/hello/084023
@@ -264,6 +264,22 @@ public class MvpHelloCtrl {
 
 		if (this.after3seconds("084023")) {
 			this.service.addToPool("084023", this.dao.uuid(this.uuid));
+		}
+		return new Date().toString();
+	}
+	
+	/**
+	 * 10. 測試 MVC310003 連綫。
+	 * @return 電文或日期。
+	 */
+	@GetMapping("/310003")
+	public String hello310003() {
+		
+		if (this.after3seconds("310003")) {
+			String xml = this.proxy.api("app", "/api/310003")
+				.body(Mono.just(this.tranx("310003")), String.class).retrieve()
+				.bodyToMono(String.class).block();
+			return xml;
 		}
 		return new Date().toString();
 	}
@@ -328,7 +344,7 @@ public class MvpHelloCtrl {
 	}	
 
 	/**
-	 * 3. 替換關鍵值。
+	 * 4. 替換關鍵值。
 	 * @param source 原始來源
 	 * @return 字串
 	 */
@@ -339,7 +355,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 4. 之前幾秒。
+	 * 5. 之前幾秒。
 	 * @param seconds 秒數
 	 * @return 字串
 	 */
@@ -351,7 +367,7 @@ public class MvpHelloCtrl {
 			calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND));
 	}
 	
-	//http://localhost:8080/mvp/api/hello/mvp110007
+	//6. mvp110007 http://localhost:8080/mvp/api/hello/mvp110007
 	@GetMapping(value = "/mvp110007", produces = MediaType.APPLICATION_XML_VALUE)
 	public String mvp110007() {
 	    if (this.after3seconds("mvp110007")) {
@@ -369,7 +385,7 @@ public class MvpHelloCtrl {
 	    return "<response><status>skip</status><message>" + new Date().toString()  + "</message></response>";
 	}
 	
-	//http://localhost:8080/mvp/api/hello/mvp110008
+	//7. mvp110008 http://localhost:8080/mvp/api/hello/mvp110008
 	@GetMapping(value = "/mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
 	public String mvp110008() {
 	    if (this.after3seconds("mvp110008")) {

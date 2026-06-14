@@ -235,6 +235,14 @@ public class EmailMaster extends SidClass {
 	}
 
 	/**
+	 * 4. ??????(MVC310003)?
+	 * @return ???
+	 */
+	public boolean invalid310003() {
+		return EmptyUtil.is(this.uuid, this.branch, this.teller, this.idNo, this.idType, this.queryUuid);
+	}
+
+	/**
 	 * 4. 是作廢條件? (2022/01/24 12:00)
 	 * @return 布林值
 	 */
