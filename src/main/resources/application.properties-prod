@@ -57,6 +57,9 @@ mvp.calllist_filename_prefix=CallList_
 #指定要建立的外撥檔案名稱 前綴字眼
 mvp.ai_calling_filename_prefix=AI_CALLING_
 
+#FTP連線檔案解密憑證碼
+mvp.decodeFtpCredential=b77a5c561934e089
+
 # fubon.mailhunter
 default.url.1=http://172.17.203.4/mailhunter_api/SendNow.asmx
 default.pojo.1=com.fubon.mvp.email

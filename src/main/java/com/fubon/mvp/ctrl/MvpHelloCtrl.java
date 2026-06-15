@@ -272,6 +272,7 @@ public class MvpHelloCtrl {
 	 * 10. 測試 MVC310003 連綫。
 	 * @return 電文或日期。
 	 */
+	//http://localhost:8080/mvp/api/310003
 	@GetMapping("/310003")
 	public String hello310003() {
 		

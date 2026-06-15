@@ -232,6 +232,7 @@ public class MvpApiCtrl {
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
+	//http://localhost:8080/mvp/api/310003
 	@PostMapping("/310003")
 	public String mvc310003(@RequestBody String xml) {
 		return mvc310003.service(this.proxy.document(xml));

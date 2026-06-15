@@ -1,24 +1,50 @@
 package com.fubon.mvp.serv;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Security;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import javax.crypto.Cipher;
-import java.io.*;
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.security.Security;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.sql.*;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 /**
  * ============================================================================
@@ -97,6 +123,9 @@ public class GenAiCallingRptServ {
 
     @Value("${mvp.ai_calling_filename_prefix:AI_CALLING_}")
     private String AI_CALLING_FILENAME_PREFIX;
+    
+    @Value("${mvp.decodeFtpCredential:b77a5c561934e089}")
+    private String DECODE_FTP_CREDENTIAL;
 
     // =================================================================
     // 【排程入口】每日凌晨 1:00 觸發
@@ -113,7 +142,7 @@ public class GenAiCallingRptServ {
             log.error("Critical error during AI Calling Report process: ", e);
         }
     }
-
+    
     // =================================================================
     // 【核心流程】模擬 shell 腳本 gen_ai_calling_rpt.sh 的完整步驟
     // =================================================================
@@ -389,7 +418,7 @@ public class GenAiCallingRptServ {
         int count = 0;
         for (String line : lines) {
             if (line.trim().isEmpty()) continue;
-            String decoded = decodeFtpCredential(line.trim());
+            String decoded = decodeFtpCredential(line.trim(), DECODE_FTP_CREDENTIAL);
             if (count == 0) {
                 ftpUser = decoded;
             } else if (count == 1) {
@@ -416,20 +445,150 @@ public class GenAiCallingRptServ {
         String remoteDir = "/MVP/810SCOMM";
         uploadFileViaFtp(FTP_IP, ftpUser, ftpPass, REPORTS_DIR, remoteDir, reportFile);
     }
+    
+    
+    
+    
+    /*
+    //測試
+    public static void main(String args[]) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    	
+    	//(1) 測試資料庫連線資訊解密
+    	String HOME="/home/mvpadm";
+    	Path decryptedConfPath = Paths.get(HOME, "mvpsqlserver.conf"); //準備存放的帳密檔案 /home/mvpadm/mvpsqlserver.conf
+    	
+    	if (Security.getProvider(BC_PROVIDER) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+
+        // 讀取 RSA 私鑰檔案
+        Path rsaKeyPath = Paths.get(HOME, "rsa.key");
+        byte[] keyBytes = Files.readAllBytes(rsaKeyPath);
+        String keyPem = new String(keyBytes, StandardCharsets.UTF_8);
+
+        // 去除 PEM 標頭/尾
+        String base64Key = keyPem
+            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+            .replace("-----BEGIN PRIVATE KEY-----", "")
+            .replace("-----END RSA PRIVATE KEY-----", "")
+            .replace("-----END PRIVATE KEY-----", "")
+            .replaceAll("\\s+", "");
+
+        byte[] derKey = java.util.Base64.getDecoder().decode(base64Key);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(derKey);
+        java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
+        RSAPrivateKey privateKey = (RSAPrivateKey) kf.generatePrivate(keySpec);
+
+        // RSA 私鑰解密（對應 openssl rsautl -decrypt）
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", BC_PROVIDER);
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+        // 讀取加密檔並解密
+        Path encPath = Paths.get(HOME, "mvpsqlserver.conf.enc");
+        byte[] encryptedBytes = Files.readAllBytes(encPath);
+        
+        byte[] decrypted = cipher.doFinal(encryptedBytes);
+        Files.write(decryptedConfPath, decrypted, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        
+        //-----------------------------------------------------------------------------------------
+        
+    	//(2) 測試FTP連線資訊解密
+        String SH_DIR="/home/mvpadm/sh";
+        File ftpIni = new File(SH_DIR, "ftp.ini"); //FTP帳密檔案(已編碼需要解碼才能使用) 就是/home/mvpadm/sh/ftp.init
+        if (!ftpIni.exists()) {
+            log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
+            return;
+        }
+        List<String> lines = Files.readAllLines(ftpIni.toPath(), StandardCharsets.UTF_8);
+        String ftpUser = "";
+        String ftpPass = "";
+        // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
+        int count = 0;
+        for (String line : lines) {
+            if (line.trim().isEmpty()) continue;
+            //String decoded = decodeFtpCredential(line.trim());
+            String decoded=decodeFtpCredential(line.trim(), "b77a5c561934e089");
+            //System.out.println(line+" => "+decoded);
+            if (count == 0) {
+                ftpUser = decoded;
+            } else if (count == 1) {
+                ftpPass = decoded;
+                break;
+            }
+            count++;
+        }
+	}
+	*/
 
     /**
      * 解碼 FTP.ini 中的加密憑證（Base64 取代 decode.sh）
      */
-    private String decodeFtpCredential(String encoded) {
+    private static String decodeFtpCredential(String encoded, String password) {
         try {
-            byte[] decoded = java.util.Base64.getDecoder().decode(encoded);
-            return new String(decoded, StandardCharsets.UTF_8);
-        } catch (IllegalArgumentException e) {
-            log.warn("Could not decode FTP credential as Base64, returning raw value.");
-            return encoded;
+            byte[] cipherData = Base64.getMimeDecoder().decode(encoded);
+
+            byte[] saltHeader = Arrays.copyOfRange(cipherData, 0, 8);
+            if (!new String(saltHeader, StandardCharsets.US_ASCII).equals("Salted__")) {
+                throw new IllegalArgumentException("Invalid OpenSSL salt header");
+            }
+            byte[] salt = Arrays.copyOfRange(cipherData, 8, 16);
+            byte[] body = Arrays.copyOfRange(cipherData, 16, cipherData.length);
+
+            //先試 SHA-256（OpenSSL >= 1.1.0 預設），再試 MD5（舊版）
+            for (String digest : new String[]{"SHA-256", "MD5"}) {
+                try {
+                    byte[] keyAndIv = evpBytesToKey(
+                            password.getBytes(StandardCharsets.UTF_8), salt, 32, 16, digest);
+                    byte[] key = Arrays.copyOfRange(keyAndIv, 0, 32);
+                    byte[] iv  = Arrays.copyOfRange(keyAndIv, 32, 48);
+
+                    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                    cipher.init(Cipher.DECRYPT_MODE,
+                            new SecretKeySpec(key, "AES"),
+                            new IvParameterSpec(iv));
+
+                    byte[] decrypted = cipher.doFinal(body);
+                    String result = new String(decrypted, StandardCharsets.UTF_8).trim();
+                    //System.out.println("[decodeFtpCredential] 成功使用 digest=" + digest);
+                    return result;
+
+                } catch (BadPaddingException | IllegalBlockSizeException e) {
+                    //這個 digest 不對，換下一個試
+                    //System.out.println("[decodeFtpCredential] digest=" + digest + " 失敗，嘗試下一個");
+                }
+            }
+            throw new RuntimeException("所有 digest 均解密失敗，請確認密碼或加密方式");
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("解碼失敗", e);
         }
     }
 
+    //新增 digest 參數
+    private static byte[] evpBytesToKey(byte[] password, byte[] salt,
+                                        int keyLen, int ivLen, String digest) throws Exception {
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance(digest);
+        byte[] keyAndIv = new byte[keyLen + ivLen];
+        byte[] prev = new byte[0];
+        int filled = 0;
+        while (filled < keyAndIv.length) {
+            md.update(prev);
+            md.update(password);
+            md.update(salt);
+            prev = md.digest();
+            int copyLen = Math.min(prev.length, keyAndIv.length - filled);
+            System.arraycopy(prev, 0, keyAndIv, filled, copyLen);
+            filled += copyLen;
+        }
+        return keyAndIv;
+    }
+    
+    
+    
+    
+    
     /**
      * 透過 Apache Commons Net FTPClient 上傳檔案（取代 ftp shell）
      */
