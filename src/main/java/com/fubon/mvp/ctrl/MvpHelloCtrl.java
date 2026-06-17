@@ -38,6 +38,12 @@ public class MvpHelloCtrl {
 		"<Tx><TxHead><HMSGID>P</HMSGID><HERRID>0000</HERRID><HSYDAY>1101111</HSYDAY><HSYTIME>122306</HSYTIME><HWSID>ROE_Client</HWSID><HSTANO>7898411</HSTANO><HDTLEN>1059</HDTLEN><HREQQ1/><HREPQ1/><HDRVQ1/><HPVDQ1/><HPVDQ2/><HSYCVD>1101112</HSYCVD><HTLID>2004115</HTLID><HTXTID>MVC110001</HTXTID><HFMTID>0001</HFMTID><HRETRN/><HSLGNF/><HSPSCK>Y8</HSPSCK><HRTNCD/><HSBTRF/><HFILL/></TxHead><TxBody><UUID></UUID><BRANCH>00200</BRANCH><TELLER_NO>89014100</TELLER_NO><TX_CODE>110001</TX_CODE><CHNL>0Z</CHNL><SUB_CHNL>19</SUB_CHNL><CUST_ID>{cust_id}</CUST_ID><ID_TYPE>01</ID_TYPE><CUST_NAME>東方不敗</CUST_NAME><ENG_NAME>will</ENG_NAME><PREV_EMAIL_ADDR>123@gmail.com</PREV_EMAIL_ADDR><AFTER_EMAIL_ADDR>456@yahoo.com.tw</AFTER_EMAIL_ADDR><FROM_DATE/><TO_DATE/><REASON>01</REASON><REMARK/><ON_OFF_LINE>Y</ON_OFF_LINE><QUERY_UUID>{uuid}</QUERY_UUID><NEXT_KEY/></TxBody></Tx>";
 	private static String txMvc310002 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + 
 		"<Tx><TxHead><HMSGID>P</HMSGID><HERRID>0000</HERRID><HSYDAY>1101111</HSYDAY><HSYTIME>122306</HSYTIME><HWSID>ROE_Client</HWSID><HSTANO>7898411</HSTANO><HDTLEN>1059</HDTLEN><HREQQ1/><HREPQ1/><HDRVQ1/><HPVDQ1/><HPVDQ2/><HSYCVD>1101112</HSYCVD><HTLID>2004115</HTLID><HTXTID>MVC110001</HTXTID><HFMTID>0001</HFMTID><HRETRN/><HSLGNF/><HSPSCK>Y8</HSPSCK><HRTNCD/><HSBTRF/><HFILL/></TxHead><TxBody><UUID></UUID><BRANCH>00200</BRANCH><TELLER_NO>89014100</TELLER_NO><TX_CODE>110001</TX_CODE><CHNL>0Z</CHNL><SUB_CHNL>19</SUB_CHNL><CUST_ID>{cust_id}</CUST_ID><ID_TYPE>01</ID_TYPE><CUST_NAME>東方不敗</CUST_NAME><ENG_NAME>will</ENG_NAME><PREV_EMAIL_ADDR>123@gmail.com</PREV_EMAIL_ADDR><AFTER_EMAIL_ADDR>456@yahoo.com.tw</AFTER_EMAIL_ADDR><FROM_DATE>20211101</FROM_DATE><TO_DATE>20220101</TO_DATE><REASON>01</REASON><REMARK/><ON_OFF_LINE>2</ON_OFF_LINE><QUERY_UUID>{uuid}</QUERY_UUID><NEXT_KEY>{next_key}</NEXT_KEY></TxBody></Tx>";
+	private static String txMvc310003 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+		"<Tx><TxHead><HMSGID>P</HMSGID><HERRID>0000</HERRID><HSYDAY>1101111</HSYDAY><HSYTIME>122306</HSYTIME><HWSID>ROE_Client</HWSID><HSTANO>7898411</HSTANO><HDTLEN>1059</HDTLEN><HREQQ1/><HREPQ1/><HDRVQ1/><HPVDQ1/><HPVDQ2/><HSYCVD>1101112</HSYCVD><HTLID>2004115</HTLID><HTXTID>MVC310003</HTXTID><HFMTID>0001</HFMTID><HRETRN/><HSLGNF/><HSPSCK>Y8</HSPSCK><HRTNCD/><HSBTRF/><HFILL/></TxHead><TxBody><UUID></UUID><BRANCH>00200</BRANCH><TELLER_NO>89014100</TELLER_NO><TX_CODE>310003</TX_CODE><CHNL>0Z</CHNL><SUB_CHNL>19</SUB_CHNL><CUST_ID>{cust_id}</CUST_ID><ID_TYPE>01</ID_TYPE><CUST_NAME>東方不敗</CUST_NAME><ENG_NAME>will</ENG_NAME><PREV_EMAIL_ADDR></PREV_EMAIL_ADDR><AFTER_EMAIL_ADDR></AFTER_EMAIL_ADDR><FROM_DATE/><TO_DATE/><REASON>01</REASON><REMARK/><ON_OFF_LINE>Y</ON_OFF_LINE><QUERY_UUID>{uuid}</QUERY_UUID><NEXT_KEY/></TxBody></Tx>";
+	private static String txMvc310004 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+		"<Tx><TxHead><HMSGID>P</HMSGID><HERRID>0000</HERRID><HSYDAY>1101111</HSYDAY><HSYTIME>122306</HSYTIME><HWSID>ROE_Client</HWSID><HSTANO>7898411</HSTANO><HDTLEN>1059</HDTLEN><HREQQ1/><HREPQ1/><HDRVQ1/><HPVDQ1/><HPVDQ2/><HSYCVD>1101112</HSYCVD><HTLID>2004115</HTLID><HTXTID>MVC310004</HTXTID><HFMTID>0001</HFMTID><HRETRN/><HSLGNF/><HSPSCK>Y8</HSPSCK><HRTNCD/><HSBTRF/><HFILL/></TxHead><TxBody><UUID></UUID><BRANCH>00200</BRANCH><TELLER_NO>89014100</TELLER_NO><TX_CODE>310004</TX_CODE><CHNL>0Z</CHNL><SUB_CHNL>19</SUB_CHNL><CUST_ID>{cust_id}</CUST_ID><ID_TYPE>01</ID_TYPE><CUST_NAME>東方不敗</CUST_NAME><ENG_NAME>will</ENG_NAME><PREV_EMAIL_ADDR></PREV_EMAIL_ADDR><AFTER_EMAIL_ADDR></AFTER_EMAIL_ADDR><FROM_DATE/><TO_DATE/><REASON>01</REASON><REMARK/><ON_OFF_LINE>Y</ON_OFF_LINE><QUERY_UUID>{uuid}</QUERY_UUID><NEXT_KEY/></TxBody></Tx>";
+	private static String txMvc310005 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+		"<Tx><TxHead><HMSGID>P</HMSGID><HERRID>0000</HERRID><HSYDAY>1101111</HSYDAY><HSYTIME>122306</HSYTIME><HWSID>ROE_Client</HWSID><HSTANO>7898411</HSTANO><HDTLEN>1059</HDTLEN><HREQQ1/><HREPQ1/><HDRVQ1/><HPVDQ1/><HPVDQ2/><HSYCVD>1101112</HSYCVD><HTLID>2004115</HTLID><HTXTID>MVC310005</HTXTID><HFMTID>0001</HFMTID><HRETRN/><HSLGNF/><HSPSCK>Y8</HSPSCK><HRTNCD/><HSBTRF/><HFILL/></TxHead><TxBody><UUID></UUID><BRANCH>00200</BRANCH><TELLER_NO>89014100</TELLER_NO><TX_CODE>310005</TX_CODE><CHNL>0Z</CHNL><SUB_CHNL>19</SUB_CHNL><CUST_ID>{cust_id}</CUST_ID><ID_TYPE>01</ID_TYPE><CUST_NAME>東方不敗</CUST_NAME><ENG_NAME>will</ENG_NAME><PREV_EMAIL_ADDR></PREV_EMAIL_ADDR><AFTER_EMAIL_ADDR></AFTER_EMAIL_ADDR><FROM_DATE/><TO_DATE/><REASON>01</REASON><REMARK/><ON_OFF_LINE>Y</ON_OFF_LINE><QUERY_UUID>{uuid}</QUERY_UUID><NEXT_KEY/></TxBody></Tx>";
 
 	private int count = 0;
 	private String uuid = null;
@@ -70,6 +76,8 @@ public class MvpHelloCtrl {
 		this.times.put("mvp110007", new Date());
 		this.times.put("mvp110008", new Date());
 		this.times.put("310003", new Date());
+		this.times.put("310004", new Date());
+		this.times.put("310005", new Date());
 	}
 			
 	/**
@@ -89,7 +97,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * (SIT) 測試 MVC110001 連綫(創建N筆測試資料)。
+	 * 2. (SIT) 測試 MVC110001 連綫(創建N筆測試資料)。
 	 * @param id 身份証號
 	 * @param online 在綫狀態
 	 * @param amount 資料行數
@@ -123,7 +131,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 2. 測試 MVC110002 連綫。
+	 * 3. 測試 MVC110002 連綫。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/110002")
@@ -139,7 +147,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 2. 測試 MVC110003 連綫。
+	 * 4. 測試 MVC110003 連綫。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/110003")
@@ -155,7 +163,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 3. 測試 MVC110006 連綫。
+	 * 5. 測試 MVC110006 連綫。
 	 * 説明：上行電文與110001共用。
 	 * @return 電文或日期。
 	 */
@@ -172,7 +180,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 4. 測試 MVC110007 連綫。
+	 * 6. 測試 MVC110007 連綫。
 	 * 説明：上行電文與110001共用。
 	 * @return 電文或日期。
 	 */
@@ -189,7 +197,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 5. 測試 MVC310001 連綫。
+	 * 7. 測試 MVC310001 連綫。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/310001")
@@ -205,7 +213,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 6. 測試 MVC310002 連綫。
+	 * 8. 測試 MVC310002 連綫。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/310002")
@@ -221,7 +229,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 7. (SIT) 測試 MVC310002 連綫(NEXT_KEY)。
+	 * 9. (SIT) 測試 MVC310002 連綫(NEXT_KEY)。
 	 * @return 電文或日期。
 	 */
 	@GetMapping("/nextkey310002/{id}/{nextkey}")
@@ -239,10 +247,10 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 8. 測試 MVC084000 連綫。
-	 * @return 電文或日期。
+    * 10. 測試 MVC084000 連綫。
+    * @return 電文或日期。
 	 */
-	@GetMapping("/084000")
+    @GetMapping("/084000")
 	public String hello084000() {
 
 		if (this.after3seconds("084000")) {
@@ -255,7 +263,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 9. 測試 MVP084023 連綫。
+	 * 11. 測試 MVP084023 連綫。
 	 * @return 電文或日期。
 	 */
 	//http://localhost:8080/mvp/api/hello/084023
@@ -269,7 +277,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 10. 測試 MVC310003 連綫。
+	 * 12. 測試 MVC310003 連綫。
 	 * @return 電文或日期。
 	 */
 	//http://localhost:8080/mvp/api/310003
@@ -278,11 +286,54 @@ public class MvpHelloCtrl {
 		
 		if (this.after3seconds("310003")) {
 			String xml = this.proxy.api("app", "/api/310003")
-				.body(Mono.just(this.tranx("310003")), String.class).retrieve()
+				.body(Mono.just(this.tranx("310003", true, true)), String.class).retrieve()
 				.bodyToMono(String.class).block();
 			return xml;
 		}
 		return new Date().toString();
+	}
+
+	/**
+     * 13. MVC310004 - EMAILDTL明細查詢
+     * @param xml 上行電文
+     * @return 下行電文
+	 */
+	//http://localhost:8080/mvp/api/310004
+	@GetMapping("/310004")
+	public String hello310004() {
+		if (this.after3seconds("310004")) {
+			String xml = this.proxy.api("app", "/api/310004")
+				.body(Mono.just(this.tranx("310004", true, true)), String.class).retrieve()
+				.bodyToMono(String.class).block();
+			return xml;
+		}
+		return new Date().toString();
+	}
+
+	/**
+     * 14. MVC310005 - AI外撥情形報表
+     * @param xml 上行電文
+     * @return 下行電文
+	 */
+	//http://localhost:8080/mvp/api/310005
+	@GetMapping("/310005")
+	public String hello310005() {
+		if (this.after3seconds("310005")) {
+			String xml = this.proxy.api("app", "/api/310005")
+				.body(Mono.just(this.tranx("310005", true, true)), String.class).retrieve()
+				.bodyToMono(String.class).block();
+			return xml;
+		}
+		return new Date().toString();
+	}
+	
+	/**
+	 * 15. 測試獲取最後一次產生的 UUID。
+	 * @return UUID 字串
+	 */
+	@GetMapping("/getuuid")
+	public String getUuid() {
+		return "<response><last_uuid>" + this.uuid + "</last_uuid></response>";
 	}
 
 	//------------------------------------------------------------------------------
@@ -290,7 +341,7 @@ public class MvpHelloCtrl {
 	//------------------------------------------------------------------------------
 	
 	/**
-	 * 1. 3秒判斷。
+	 * 16. 3秒判斷。
 	 * @param txNo 交易代號。
 	 * @return 布林值
 	 */
@@ -304,7 +355,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 2. 讀取上行電文。
+	 * 17. 讀取上行電文。
 	 * @param txNo 電文編號
 	 * @return 字串
 	 */
@@ -313,7 +364,7 @@ public class MvpHelloCtrl {
 	}
 
 	/**
-	 * 3. 讀取上行電文。
+	 * 18. 讀取上行電文。
 	 * @param txNo 電文編號
 	 * @param bUuid 重設UUID
 	 * @param bCustId 重設身份証號
@@ -340,12 +391,18 @@ public class MvpHelloCtrl {
 			return this.replace(txMvc310001);
 		case "310002":
 			return this.replace(txMvc310002);
+		case "310003":
+			return this.replace(txMvc310003);
+		case "310004":
+			return this.replace(txMvc310004);
+		case "310005":
+			return this.replace(txMvc310005);
 		}
 		return null;
 	}	
 
 	/**
-	 * 4. 替換關鍵值。
+	 * 19. 替換關鍵值。
 	 * @param source 原始來源
 	 * @return 字串
 	 */
@@ -356,7 +413,7 @@ public class MvpHelloCtrl {
 	}
 	
 	/**
-	 * 5. 之前幾秒。
+	 * 20. 之前幾秒。
 	 * @param seconds 秒數
 	 * @return 字串
 	 */
@@ -368,7 +425,11 @@ public class MvpHelloCtrl {
 			calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND));
 	}
 	
-	//6. mvp110007 http://localhost:8080/mvp/api/hello/mvp110007
+	/**
+	 * 21. MVP110007 - 六日未回覆 AI外撥處理
+	 * @return 字串
+	 */
+	// http://localhost:8080/mvp/api/hello/mvp110007
 	@GetMapping(value = "/mvp110007", produces = MediaType.APPLICATION_XML_VALUE)
 	public String mvp110007() {
 	    if (this.after3seconds("mvp110007")) {
@@ -386,7 +447,11 @@ public class MvpHelloCtrl {
 	    return "<response><status>skip</status><message>" + new Date().toString()  + "</message></response>";
 	}
 	
-	//7. mvp110008 http://localhost:8080/mvp/api/hello/mvp110008
+	/**
+	 * 22. MVP110008 - 三日未回覆 重發驗證信
+	 * @return 字串
+	 */
+	//http://localhost:8080/mvp/api/hello/mvp110008
 	@GetMapping(value = "/mvp110008", produces = MediaType.APPLICATION_XML_VALUE)
 	public String mvp110008() {
 	    if (this.after3seconds("mvp110008")) {

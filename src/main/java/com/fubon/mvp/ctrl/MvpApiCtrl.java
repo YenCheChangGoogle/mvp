@@ -1,5 +1,7 @@
 package com.fubon.mvp.ctrl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,13 +20,12 @@ import com.fubon.mvp.serv.Mvc110007Serv;
 import com.fubon.mvp.serv.Mvc310001Serv;
 import com.fubon.mvp.serv.Mvc310002Serv;
 import com.fubon.mvp.serv.Mvc310003Serv;
+import com.fubon.mvp.serv.Mvc310004Serv;
+import com.fubon.mvp.serv.Mvc310005Serv;
 import com.fubon.mvp.serv.Mvp110007Serv;
 import com.fubon.mvp.serv.Mvp110008Serv;
 
 import page2020.client.WebProxy;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 富邦MVP- MVP 控制器
@@ -49,12 +50,18 @@ public class MvpApiCtrl {
 	private Mvc110006Serv mvc110006;
 	@Autowired
 	private Mvc110007Serv mvc110007;
+	
 	@Autowired
 	private Mvc310001Serv mvc310001;
 	@Autowired
 	private Mvc310002Serv mvc310002;
 	@Autowired
 	private Mvc310003Serv mvc310003;
+	@Autowired
+	private Mvc310004Serv mvc310004;
+	@Autowired
+	private Mvc310005Serv mvc310005;
+	
 	@Autowired
 	private Mvc084000Serv mvc084000;
 	
@@ -238,4 +245,27 @@ public class MvpApiCtrl {
 		return mvc310003.service(this.proxy.document(xml));
 	}
 	
+
+	/**
+	 * 12. MVC310004 - EMAILDTL明細查詢
+	 * @param xml 上行電文
+	 * @return 下行電文
+	 */
+	//http://localhost:8080/mvp/api/310004
+	@PostMapping("/310004")
+	public String mvc310004(@RequestBody String xml) {
+		return mvc310004.service(this.proxy.document(xml));
+	}
+
+	/**
+	 * 13. MVC310005 - AI外撥情形報表
+	 * @param xml 上行電文
+	 * @return 下行電文
+	 */
+	//http://localhost:8080/mvp/api/310005
+	@PostMapping("/310005")
+	public String mvc310005(@RequestBody String xml) {
+		return mvc310005.service(this.proxy.document(xml));
+	}
+
 }
