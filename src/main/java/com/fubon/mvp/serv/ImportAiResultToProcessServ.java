@@ -101,7 +101,8 @@ public class ImportAiResultToProcessServ {
 	//   對應 CallList_YYYYMMDD.xlsx 的 A~O 列
 	//   A=0, B=1, C=2, ..., K=10, L=11
 	// -----------------------------------------------------------------
-	private static final int IDX_UUID = 11;           // L列: UUID (★比對 EMAILMAS 用)
+	//private static final int IDX_UUID = 11;           // L列: UUID (★比對 EMAILMAS 用)
+	private static final int IDX_IDSN = 1;            // B列: 客戶身分字號
 	private static final int IDX_CUST_CHOICE = 10;    // K列: 客戶選擇 (★決定後續處理流程)
 	private static final int IDX_TELEPHONE = 4;       // E列: 外撥號碼
 	private static final int IDX_CUST_NAME = 2;       // C列: 客戶姓名
@@ -157,52 +158,50 @@ public class ImportAiResultToProcessServ {
 		//     countSkip    → 跳過 (UUID 為空、找不到記錄、其他值)
 		// -----------------------------------------------------------------
 		int countChoice1 = 0;
-		int countChoice2 = 0;
-		int countSkip = 0;
-
+		int otherChoice = 0;
+		int statusNot00 = 0;
 		for (AiResultRow row : aiResultList) {
 
-			// ★ 前置檢查：UUID 不能為空
-			if (row.getUuid() == null || row.getUuid().isEmpty()) {
-				log.warn("ImportAiResultProcessServ: UUID 為空，跳過此筆");
-				countSkip++;
+			// ★ 前置檢查：IdNo 不能為空
+			if (row.getIdNo() == null || row.getIdNo().isEmpty()) {
+				log.warn("ImportAiResultProcessServ: IdNo 為空，跳過此筆");
 				continue;
 			}
 
 			// ★ 查詢 EMAILMAS 主檔
-			EmailMaster master = this.dao.uuid(row.getUuid());
+			EmailMaster master = this.dao.idNo(row.getIdNo());
 			if (master == null) {
-				log.warn("ImportAiResultProcessServ: 找不到 UUID=" + row.getUuid() + " 的記錄");
-				countSkip++;
+				log.warn("ImportAiResultProcessServ: 找不到 IdNo=" + row.getIdNo() + " 的記錄");
 				continue;
 			}
+			
+			if(master.getStatus().equals("00")) {
+				// ★ 依「客戶選擇」分派處理
+				String choice = row.getCustChoice();
 
-			// ★ 依「客戶選擇」分派處理
-			String choice = row.getCustChoice();
-
-			if ("1".equals(choice)) {
-				// 客戶選擇 1: 重新觸發流程（重新發送驗證信）
-				this.handleChoice1(master);
-				countChoice1++;
-			} else if ("2".equals(choice)) {
-				// 客戶選擇 2: 結束流程（註記無須變更 Email）
-				this.handleChoice2(master, row);
-				countChoice2++;
-			} else {
-				// 其他值: 不處理
-				countSkip++;
-				log.info("ImportAiResultProcessServ: UUID=" + row.getUuid()
-					+ ", 客戶選擇=" + choice + ", 不處理");
+				if ("1".equals(choice)) {
+					// 客戶選擇 1: 重新觸發流程（重新發送驗證信）
+					this.handleChoice1(master);
+					countChoice1++;
+				} else {
+					// 客戶選擇 2或空白: 結束流程（註記無須變更 Email）
+					this.handleChoice2(master, row);
+					otherChoice++;
+				}	
 			}
+			else {
+				statusNot00++;
+			}
+
 		}
 
 		// -----------------------------------------------------------------
 		// 步驟 4：處理完成統計
 		// -----------------------------------------------------------------
 		log.info("ImportAiResultProcessServ: 處理完成 - "
-			+ "客戶選擇1(重發)=" + countChoice1
-			+ ", 客戶選擇2(完成)=" + countChoice2
-			+ ", 跳過=" + countSkip);
+			+ "客戶選擇1(重發)的筆數=" + countChoice1
+			+ ", 客戶選擇2或空白的筆數=" + otherChoice
+			+ ", 因為STATUS不等於00 無法處理的筆數="+statusNot00);
 	}
 
 	// =================================================================
@@ -243,10 +242,10 @@ public class ImportAiResultToProcessServ {
 
 				AiResultRow aiRow = new AiResultRow();
 
-				// ★ UUID (L列, IDX=11) — 比對 EMAILMAS 的關鍵欄位
-				Cell uuidCell = row.getCell(IDX_UUID);
-				if (uuidCell != null) {
-					aiRow.setUuid(this.getCellStringValue(uuidCell));
+				// ★ IDNO (L列, IDX=1) — 比對 EMAILMAS 的關鍵欄位
+				Cell idNoCell = row.getCell(IDX_IDSN);
+				if (idNoCell != null) {
+					aiRow.setIdNo(this.getCellStringValue(idNoCell));
 				}
 
 				// ★ 客戶選擇 (K列, IDX=10) — 決定後續處理流程
@@ -279,8 +278,8 @@ public class ImportAiResultToProcessServ {
 					aiRow.setCallTime(this.getCellStringValue(timeCell));
 				}
 
-				// ★ 僅在 UUID 有效時才加入清單
-				if (aiRow.getUuid() != null && !aiRow.getUuid().isEmpty()) {
+				// ★ 僅在 IDNO 有效時才加入清單
+				if (aiRow.getIdNo() != null && !aiRow.getIdNo().isEmpty()) {
 					resultList.add(aiRow);
 				}
 			}
@@ -434,15 +433,19 @@ public class ImportAiResultToProcessServ {
 	 * 僅包含處理流程所需的 6 個欄位。
 	 */
 	private static class AiResultRow {
-		private String uuid;        // L列: UUID (比對 EMAILMAS 用)
+		//private String uuid;        // L列: UUID (比對 EMAILMAS 用)
+		private String idNo;
 		private String custChoice;  // K列: 客戶選擇 (1=重發, 2=結束, 其他=跳過)
 		private String telephone;   // E列: 外撥號碼
 		private String custName;    // C列: 客戶姓名
 		private String callResult;  // F列: 外撥結果
 		private String callTime;    // H列: 外撥時間
+		
+		public String getIdNo() { return idNo; }
+		public void setIdNo(String idNo) { this.idNo=idNo; }
 
-		public String getUuid() { return uuid; }
-		public void setUuid(String uuid) { this.uuid = uuid; }
+		//public String getUuid() { return uuid; }
+		//public void setUuid(String uuid) { this.uuid = uuid; }
 
 		public String getCustChoice() { return custChoice; }
 		public void setCustChoice(String custChoice) { this.custChoice = custChoice; }

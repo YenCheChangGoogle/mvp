@@ -263,4 +263,39 @@ public class EmailDao {
 	    //return this.masterRepo.findByStatusAndTxStatusAndChangeDateGreaterThanAndChangeDateLessThanAndFlagOrderByChangeDateAsc"00", "13", startDate, endDate, "1");
 	     
 	}
+	
+	/**
+	 * 13. 依據身分證字號讀取實體。
+	 * @param idNo 身分證字號
+	 * @return 實體
+	 */
+	public EmailMaster idNo(String idNo) {
+		EmailMaster m=null;
+		List<EmailMaster> list= this.masterRepo.findAllByIdNoAndStatusOrderByChangeDateAscChangeTimeAsc(idNo, "00");
+		for(EmailMaster em:list) {
+			
+			//排除 STATUS 不等於 00
+			//if(!em.getStatus().equals("00")) {
+			//	continue;
+			//}
+			
+			//排除 CHANNEL 等於 JS
+			if(em.getChannel().equals("JS")) {
+				continue;
+			}
+			//排除 ON_OFF_LINE 等於 Y
+			if(em.getOnline().equals("Y")) {
+				continue;
+			}
+			//排除 修改日 小於等於 20220101
+			if(Integer.parseInt(em.getChangeDate())<=20220101) {
+				continue;
+			}
+			
+			m=em;
+			break;
+		}
+		
+		return m;
+	}
 }

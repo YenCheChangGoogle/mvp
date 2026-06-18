@@ -10,7 +10,12 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTP;
@@ -114,6 +119,9 @@ public class ImportAiResultServ {
     
     @Value("${mvp.sh.dir:/home/mvpadm/sh}")
     private String SH_DIR;
+    
+    @Value("${mvp.decodeFtpCredential:b77a5c561934e089}")
+    private String DECODE_FTP_CREDENTIAL;
 
     // =================================================================
     // 【排程入口】每日凌晨 2:00 觸發
@@ -191,17 +199,28 @@ public class ImportAiResultServ {
             //   現：FTPClient (passive mode) + Base64.getDecoder()
             // -----------------------------------------------------------------
             log.info("步驟4 FTP 下載 {}", aiFilename);
-            List<String> ftpLines = Files.readAllLines(Paths.get(SH_DIR + "/ftp.ini"));
+            
+            File ftpIni = new File(SH_DIR, "ftp.ini");
+            if (!ftpIni.exists()) {
+                log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
+                return;
+            }
+
+            List<String> lines = Files.readAllLines(ftpIni.toPath(), StandardCharsets.UTF_8);
             String ftpUser = "";
             String ftpPass = "";
+
+            // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
             int count = 0;
-            for (String line : ftpLines) {
+            for (String line : lines) {
                 if (line.trim().isEmpty()) continue;
-                // decode.sh → Java Base64 解碼 (UTF-8)
-                // ※ 若 decode.sh 非 Base64，請修改 decodeFtpCredential()
-                String decoded = decodeFtpCredential(line.trim());
-                if (count == 0) ftpUser = decoded;
-                else if (count == 1) { ftpPass = decoded; break; }
+                String decoded = decodeFtpCredential(line.trim(), DECODE_FTP_CREDENTIAL);
+                if (count == 0) {
+                    ftpUser = decoded;
+                } else if (count == 1) {
+                    ftpPass = decoded;
+                    break;
+                }
                 count++;
             }
 
@@ -480,4 +499,70 @@ public class ImportAiResultServ {
     private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) { super(message); }
     }
+    
+    /**
+     * 解碼 FTP.ini 中的加密憑證（Base64 取代 decode.sh）
+     */
+    private static String decodeFtpCredential(String encoded, String password) {
+        try {
+            byte[] cipherData = Base64.getMimeDecoder().decode(encoded);
+
+            byte[] saltHeader = Arrays.copyOfRange(cipherData, 0, 8);
+            if (!new String(saltHeader, StandardCharsets.US_ASCII).equals("Salted__")) {
+                throw new IllegalArgumentException("Invalid OpenSSL salt header");
+            }
+            byte[] salt = Arrays.copyOfRange(cipherData, 8, 16);
+            byte[] body = Arrays.copyOfRange(cipherData, 16, cipherData.length);
+
+            //先試 SHA-256（OpenSSL >= 1.1.0 預設），再試 MD5（舊版）
+            for (String digest : new String[]{"SHA-256", "MD5"}) {
+                try {
+                    byte[] keyAndIv = evpBytesToKey(
+                            password.getBytes(StandardCharsets.UTF_8), salt, 32, 16, digest);
+                    byte[] key = Arrays.copyOfRange(keyAndIv, 0, 32);
+                    byte[] iv  = Arrays.copyOfRange(keyAndIv, 32, 48);
+
+                    Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+                    cipher.init(Cipher.DECRYPT_MODE,
+                            new SecretKeySpec(key, "AES"),
+                            new IvParameterSpec(iv));
+
+                    byte[] decrypted = cipher.doFinal(body);
+                    String result = new String(decrypted, StandardCharsets.UTF_8).trim();
+                    //System.out.println("[decodeFtpCredential] 成功使用 digest=" + digest);
+                    return result;
+
+                } catch (BadPaddingException | IllegalBlockSizeException e) {
+                    //這個 digest 不對，換下一個試
+                    //System.out.println("[decodeFtpCredential] digest=" + digest + " 失敗，嘗試下一個");
+                }
+            }
+            throw new RuntimeException("所有 digest 均解密失敗，請確認密碼或加密方式");
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("解碼失敗", e);
+        }
+    }
+
+    //新增 digest 參數
+    private static byte[] evpBytesToKey(byte[] password, byte[] salt,
+                                        int keyLen, int ivLen, String digest) throws Exception {
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance(digest);
+        byte[] keyAndIv = new byte[keyLen + ivLen];
+        byte[] prev = new byte[0];
+        int filled = 0;
+        while (filled < keyAndIv.length) {
+            md.update(prev);
+            md.update(password);
+            md.update(salt);
+            prev = md.digest();
+            int copyLen = Math.min(prev.length, keyAndIv.length - filled);
+            System.arraycopy(prev, 0, keyAndIv, filled, copyLen);
+            filled += copyLen;
+        }
+        return keyAndIv;
+    }
+    
 }

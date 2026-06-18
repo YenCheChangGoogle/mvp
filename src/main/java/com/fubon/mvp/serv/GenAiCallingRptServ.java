@@ -224,7 +224,7 @@ public class GenAiCallingRptServ {
                 "       'NA' as SMS5,\n" +
                 "       'NA' as SMSDefault\n" +
                 "from EMAILMAS \n" +
-                "where STATUS='00' AND TX_STAUT='17' AND PHONE IS NOT NULL AND PHONE <> '';";
+                "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '';";
 
             exportCsvData(ip, port, database, user, password, dataQuery, reportPath);
 

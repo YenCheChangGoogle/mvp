@@ -144,6 +144,8 @@ public class Mvp110007Serv {
 			return;
 		}
 		
+		log.info("查詢逾期6日未回覆清單 要處裡的數量筆數="+jobList.size());
+		
 		// 3. 執行 JOB 程序
 		for (EmailMaster item : jobList) {
 
