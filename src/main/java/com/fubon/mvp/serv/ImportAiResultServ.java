@@ -126,7 +126,12 @@ public class ImportAiResultServ {
     // =================================================================
     // 【排程入口】每日凌晨 2:00 觸發
     // =================================================================
-    @Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Taipei")
+   
+    //@Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Taipei")
+    
+    //排程執行週期設
+    @Scheduled(cron = "${mvp.110007.ImportAiResult.expression}", zone = "${mvp.110007.cron.zone}")
+    
     public void execute() {
         log.info("Starting AI Result Import process...");
         try {
@@ -215,6 +220,7 @@ public class ImportAiResultServ {
             for (String line : lines) {
                 if (line.trim().isEmpty()) continue;
                 String decoded = decodeFtpCredential(line.trim(), DECODE_FTP_CREDENTIAL);
+                
                 if (count == 0) {
                     ftpUser = decoded;
                 } else if (count == 1) {

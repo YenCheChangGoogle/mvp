@@ -34,6 +34,8 @@ default.job.1=1
 default.job.2=1
 default.job.3=0
 
+
+
 #六日未回覆AI外撥
 default.job.4=1
 
@@ -59,6 +61,22 @@ mvp.ai_calling_filename_prefix=AI_CALLING_
 
 #FTP連線檔案解密憑證碼
 mvp.decodeFtpCredential=b77a5c561934e089
+
+#六日未回覆AI外撥: (階段1) 資料前制處置 (每天凌晨 00:30:00 觸發)
+mvp.110007.cron.expression=0 30 0 * * ?
+mvp.110007.cron.zone=Asia/Taipei
+#六日未回覆AI外撥: (階段1) 資料前制處置 只限制每周星期一才執行
+mvp.110007.MUST_MONDAY=true
+#六日未回覆AI外撥: (階段2) 外撥檔案建立與上傳 (每日凌晨 1:00 觸發)
+mvp.110007.GenAiCallingRpt.expression=0 0 1 * * ?
+#六日未回覆AI外撥: (階段3) 外撥檔案下載與結果更新 (每日凌晨 2:00 觸發)
+mvp.110007.ImportAiResult.expression=0 0 2 * * ?
+
+#三日未回覆重發驗證信: 每天凌晨 00:40:00 執行一次
+mvp.110008.cron.expression=0 40 0 * * ?
+mvp.110008.cron.zone=Asia/Taipei
+
+
 
 # fubon.mailhunter
 default.url.1=http://172.17.203.4/mailhunter_api/SendNow.asmx

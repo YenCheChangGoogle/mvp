@@ -219,14 +219,16 @@ public class EmailDao {
 	    return this.masterRepo.findByStatusAndTxStatusAndChangeDateEqualsOrderByChangeDateAsc("00", "13", threshold);
 	}
 
+	//TODO 查詢逾時六回覆清單 (六日未回覆AI外撥) 限制 必須是 星期一執行 範圍是 D-7 ~ D-28 區間 
 	/**
 	 * 12. 查詢逾時六回覆清單 (六日未回覆AI外撥)
 	 *     條件：status="00" 且 txStatus="13" 且 changeDate < D-6 且 flag="1"
 	 *     條件時間修改
 	 *     條件：status="00" 且 txStatus="13" 且 changeDate 每周一執行一次且範圍是 D-28日 到 D-7日 且 flag="1"
+	 * @param MUST_MONDAY true:限定必須是星期一 false:不限定
 	 * @return 清單
 	 */
-	public List<EmailMaster> findOverdue6DaysAiCalling() {
+	public List<EmailMaster> findOverdue6DaysAiCalling(boolean MUST_MONDAY) {
 		//return this.masterRepo.findOverdue6DaysAiCalling();
 		
 		/*
@@ -241,9 +243,11 @@ public class EmailDao {
 	    //取得今天是星期幾
 	    int dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK);
 
-	    //只在星期一執行
-	    if (dayOfWeek != java.util.Calendar.MONDAY) {
-	        return java.util.Collections.emptyList();
+	    if(MUST_MONDAY) {
+		    //只在星期一執行
+		    if (dayOfWeek != java.util.Calendar.MONDAY) {
+		        return java.util.Collections.emptyList();
+		    }
 	    }
 
 	    //D-28
@@ -265,7 +269,7 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 13. 依據身分證字號讀取實體。
+	 * 13. 依據身分證字號讀取實體 (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
 	 * @param idNo 身分證字號
 	 * @return 實體
 	 */

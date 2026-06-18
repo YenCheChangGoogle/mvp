@@ -130,7 +130,12 @@ public class GenAiCallingRptServ {
     // =================================================================
     // 【排程入口】每日凌晨 1:00 觸發
     // =================================================================
-    @Scheduled(cron = "0 0 1 * * ?", zone = "Asia/Taipei")
+    
+    //@Scheduled(cron = "0 0 1 * * ?", zone = "Asia/Taipei")
+	
+    //排程執行週期設
+    @Scheduled(cron = "${mvp.110007.GenAiCallingRpt.expression}", zone = "${mvp.110007.cron.zone}")
+    
     public void execute() {
         log.info("Starting AI Calling Report process...");
         try {
@@ -340,8 +345,7 @@ public class GenAiCallingRptServ {
     // 【步驟 4a】寫入 CSV 標頭
     // =================================================================
     private void writeCsvHeader(Path csvPath) throws IOException {
-        String header = "手機號碼,客戶ID,客戶姓名,本次外撥目的,TTS1,變數1,變數2,變數3," +
-                        "TTS2,TTS3,TTS4,SMS1,SMS2,SMS3,SMS4,SMS5,SMSDefault";
+        String header = "手機號碼,客戶ID,客戶姓名,本次外撥目的,TTS1,變數1,變數2,變數3,TTS2,TTS3,TTS4,SMS1,SMS2,SMS3,SMS4,SMS5,SMSDefault";
 
         if (Files.exists(csvPath)) {
             Files.delete(csvPath);
@@ -355,8 +359,7 @@ public class GenAiCallingRptServ {
     // =================================================================
     // 【步驟 4b】查詢資料並寫入 CSV（JDBC 取代 sqlcmd）
     // =================================================================
-    private void exportCsvData(String dbIp, String dbPort, String dbName,
-                               String dbUser, String dbPass, String query, Path csvPath) throws Exception {
+    private void exportCsvData(String dbIp, String dbPort, String dbName, String dbUser, String dbPass, String query, Path csvPath) throws Exception {
 
         String url = String.format(
             "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
@@ -383,7 +386,7 @@ public class GenAiCallingRptServ {
             }
         }
 
-        log.info("CSV data exported to: {}", csvPath);
+        log.info("建立外撥清單檔案 CSV data exported to: {}", csvPath);
     }
 
     // =================================================================
@@ -404,6 +407,8 @@ public class GenAiCallingRptServ {
     // 【步驟 5】透過 FTP 上傳報表（Apache Commons Net 取代 ftp shell）
     // =================================================================
     private void processFtpUpload(String reportFile) throws Exception {
+    	log.info("透過 FTP 上傳報表");
+    	
         File ftpIni = new File(SH_DIR, "ftp.ini");
         if (!ftpIni.exists()) {
             log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
@@ -429,9 +434,7 @@ public class GenAiCallingRptServ {
         }
 
         if (ftpUser.isEmpty() || ftpPass.isEmpty()) {
-            log.error("FTP credentials are empty, cannot upload. ftpUser={}, ftpPass={}",
-                ftpUser.isEmpty() ? "(empty)" : "***",
-                ftpPass.isEmpty() ? "(empty)" : "***");
+            log.error("FTP credentials are empty, cannot upload. ftpUser={}, ftpPass={}", ftpUser.isEmpty() ? "(empty)" : "***", ftpPass.isEmpty() ? "(empty)" : "***");
             return;
         }
 
@@ -441,88 +444,13 @@ public class GenAiCallingRptServ {
             return;
         }
         
-        //TODO 上傳路徑
+        //TODO 上傳遠端的路徑
         String remoteDir = "/MVP/810SCOMM";
+        
         uploadFileViaFtp(FTP_IP, ftpUser, ftpPass, REPORTS_DIR, remoteDir, reportFile);
     }
     
-    
-    
-    
-    /*
-    //測試
-    public static void main(String args[]) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-    	
-    	//(1) 測試資料庫連線資訊解密
-    	String HOME="/home/mvpadm";
-    	Path decryptedConfPath = Paths.get(HOME, "mvpsqlserver.conf"); //準備存放的帳密檔案 /home/mvpadm/mvpsqlserver.conf
-    	
-    	if (Security.getProvider(BC_PROVIDER) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
-
-        // 讀取 RSA 私鑰檔案
-        Path rsaKeyPath = Paths.get(HOME, "rsa.key");
-        byte[] keyBytes = Files.readAllBytes(rsaKeyPath);
-        String keyPem = new String(keyBytes, StandardCharsets.UTF_8);
-
-        // 去除 PEM 標頭/尾
-        String base64Key = keyPem
-            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-            .replace("-----BEGIN PRIVATE KEY-----", "")
-            .replace("-----END RSA PRIVATE KEY-----", "")
-            .replace("-----END PRIVATE KEY-----", "")
-            .replaceAll("\\s+", "");
-
-        byte[] derKey = java.util.Base64.getDecoder().decode(base64Key);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(derKey);
-        java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
-        RSAPrivateKey privateKey = (RSAPrivateKey) kf.generatePrivate(keySpec);
-
-        // RSA 私鑰解密（對應 openssl rsautl -decrypt）
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", BC_PROVIDER);
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-        // 讀取加密檔並解密
-        Path encPath = Paths.get(HOME, "mvpsqlserver.conf.enc");
-        byte[] encryptedBytes = Files.readAllBytes(encPath);
-        
-        byte[] decrypted = cipher.doFinal(encryptedBytes);
-        Files.write(decryptedConfPath, decrypted, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        
-        //-----------------------------------------------------------------------------------------
-        
-    	//(2) 測試FTP連線資訊解密
-        String SH_DIR="/home/mvpadm/sh";
-        File ftpIni = new File(SH_DIR, "ftp.ini"); //FTP帳密檔案(已編碼需要解碼才能使用) 就是/home/mvpadm/sh/ftp.init
-        if (!ftpIni.exists()) {
-            log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
-            return;
-        }
-        List<String> lines = Files.readAllLines(ftpIni.toPath(), StandardCharsets.UTF_8);
-        String ftpUser = "";
-        String ftpPass = "";
-        // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
-        int count = 0;
-        for (String line : lines) {
-            if (line.trim().isEmpty()) continue;
-            //String decoded = decodeFtpCredential(line.trim());
-            String decoded=decodeFtpCredential(line.trim(), "b77a5c561934e089");
-            //System.out.println(line+" => "+decoded);
-            if (count == 0) {
-                ftpUser = decoded;
-            } else if (count == 1) {
-                ftpPass = decoded;
-                break;
-            }
-            count++;
-        }
-	}
-	*/
-
-    /**
-     * 解碼 FTP.ini 中的加密憑證（Base64 取代 decode.sh）
-     */
+    //解碼 FTP.ini 中的加密憑證（Base64 取代 decode.sh）
     private static String decodeFtpCredential(String encoded, String password) {
         try {
             byte[] cipherData = Base64.getMimeDecoder().decode(encoded);
@@ -567,8 +495,7 @@ public class GenAiCallingRptServ {
     }
 
     //新增 digest 參數
-    private static byte[] evpBytesToKey(byte[] password, byte[] salt,
-                                        int keyLen, int ivLen, String digest) throws Exception {
+    private static byte[] evpBytesToKey(byte[] password, byte[] salt, int keyLen, int ivLen, String digest) throws Exception {
         java.security.MessageDigest md = java.security.MessageDigest.getInstance(digest);
         byte[] keyAndIv = new byte[keyLen + ivLen];
         byte[] prev = new byte[0];
@@ -585,15 +512,10 @@ public class GenAiCallingRptServ {
         return keyAndIv;
     }
     
-    
-    
-    
-    
     /**
      * 透過 Apache Commons Net FTPClient 上傳檔案（取代 ftp shell）
      */
-    private void uploadFileViaFtp(String ftpIp, String ftpUser, String ftpPass,
-                                  String localDir, String remoteDir, String fileName) throws Exception {
+    private void uploadFileViaFtp(String ftpIp, String ftpUser, String ftpPass, String localDir, String remoteDir, String fileName) throws Exception {
 
         org.apache.commons.net.ftp.FTPClient ftp = null;
         try {
@@ -611,14 +533,14 @@ public class GenAiCallingRptServ {
                     //log.error("FTP upload failed for: {}", fileName);
                     throw new IOException("FTP upload failed for: " + fileName + ", server reply: " + ftp.getReplyString());
                 } else {
-                    log.info("FTP upload completed: {}", fileName);
+                    log.info("FTP upload completed: {} 上傳遠端的路徑 {} {}", fileName, ftpIp, remoteDir);
                 }
             }
 
             ftp.logout();
         } finally {
             if (ftp != null && ftp.isConnected()) {
-                try { ftp.disconnect(); } catch (IOException e) { /* ignore */ }
+                try { ftp.disconnect(); } catch (IOException e) { }
             }
         }
     }

@@ -219,8 +219,8 @@ public class Mvp110008Serv {
      *    三日未回覆重發驗證信：
      *    將 TX_STATUS="13" 且 D-3 的記錄推回 TX_STATUS="01", 由 MVC110001 重新觸發流程
      */
-    //300秒
-    //@Scheduled(fixedDelay=300000)
+    
+    //TODO 三日未回覆重發驗證信 (排程執行週期設定)
     //
     //0 0 2 * * ?
     //│ │ │ │ │ │
@@ -231,8 +231,16 @@ public class Mvp110008Serv {
     //│ └───────── 分鐘（0 = 0 分）
     //└─────────── 秒（0 = 0 秒）
     //
+    
+    //300秒
+    //@Scheduled(fixedDelay=300000)
+    
     //每天凌晨 00:30:00 執行一次
-    @Scheduled(cron = "0 30 0 * * ?", zone = "Asia/Taipei")
+    //@Scheduled(cron = "0 30 0 * * ?", zone = "Asia/Taipei")
+    
+    //排程執行週期設
+    @Scheduled(cron = "${mvp.110008.cron.expression}", zone = "${mvp.110008.cron.zone}")
+    
     public void schedule() {
         
         if (! this.job) {

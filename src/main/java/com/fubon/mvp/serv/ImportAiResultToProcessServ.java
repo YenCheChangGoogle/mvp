@@ -169,26 +169,33 @@ public class ImportAiResultToProcessServ {
 			}
 
 			// ★ 查詢 EMAILMAS 主檔
+			//依據身分證字號讀取實體 EmailMaster (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
+			//因為現行的資料庫可能存在 同一個身分字號 竟有多筆 因此限制只取 取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y 的資料
 			EmailMaster master = this.dao.idNo(row.getIdNo());
 			if (master == null) {
 				log.warn("ImportAiResultProcessServ: 找不到 IdNo=" + row.getIdNo() + " 的記錄");
 				continue;
 			}
 			
+			//STATUS等於00
 			if(master.getStatus().equals("00")) {
 				// ★ 依「客戶選擇」分派處理
 				String choice = row.getCustChoice();
-
+				
+				//選擇 1的
 				if ("1".equals(choice)) {
 					// 客戶選擇 1: 重新觸發流程（重新發送驗證信）
 					this.handleChoice1(master);
 					countChoice1++;
-				} else {
+				} 
+				//選擇 非1的
+				else {
 					// 客戶選擇 2或空白: 結束流程（註記無須變更 Email）
 					this.handleChoice2(master, row);
 					otherChoice++;
 				}	
 			}
+			//STATUS不等於00 無法處理的筆數
 			else {
 				statusNot00++;
 			}
@@ -236,6 +243,8 @@ public class ImportAiResultToProcessServ {
 
 			// 逐列讀取 (包含標題列)
 			for (Row row : sheet) {
+				
+				//第一列是標題 直接略過
 				if (row.getRowNum() == 0) {
 					continue; // 跳過標題列 (A~O)
 				}
@@ -433,19 +442,22 @@ public class ImportAiResultToProcessServ {
 	 * 僅包含處理流程所需的 6 個欄位。
 	 */
 	private static class AiResultRow {
-		//private String uuid;        // L列: UUID (比對 EMAILMAS 用)
-		private String idNo;
+		
+		//因為外部系統的UUID 跟 mvp系統的UUID 不同定義 所以無法使用 改成使用 身分字號 來判定使用者
+		//private String uuid;      // L列: UUID (比對 EMAILMAS 用)
+		
+		private String idNo;        // B列: 身分字號
 		private String custChoice;  // K列: 客戶選擇 (1=重發, 2=結束, 其他=跳過)
 		private String telephone;   // E列: 外撥號碼
 		private String custName;    // C列: 客戶姓名
 		private String callResult;  // F列: 外撥結果
 		private String callTime;    // H列: 外撥時間
 		
-		public String getIdNo() { return idNo; }
-		public void setIdNo(String idNo) { this.idNo=idNo; }
-
 		//public String getUuid() { return uuid; }
 		//public void setUuid(String uuid) { this.uuid = uuid; }
+		
+		public String getIdNo() { return idNo; }
+		public void setIdNo(String idNo) { this.idNo=idNo; }
 
 		public String getCustChoice() { return custChoice; }
 		public void setCustChoice(String custChoice) { this.custChoice = custChoice; }

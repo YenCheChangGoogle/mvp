@@ -85,6 +85,10 @@ public class Mvp110007Serv {
 	private String defaultJob4;
 	// 啓動JOB開關
 	private boolean job;
+	
+	//六日未回覆AI外撥: 只限制每周星期一才執行
+	@Value("${mvp.110007.MUST_MONDAY}")
+	private boolean MUST_MONDAY;
 
 	/**
 	 * 初始程序
@@ -103,10 +107,18 @@ public class Mvp110007Serv {
 	/**
 	 * 定時執行 (仿照 Mvp067000Serv)
 	 */
+	
+	//TODO 六日未回覆AI外撥 (排程執行週期設定)
+	
 	//300秒
 	//@Scheduled(fixedDelay=300000)
+	
 	//每天凌晨 00:30:00 執行一次
-    @Scheduled(cron = "0 30 0 * * ?", zone = "Asia/Taipei")
+    //@Scheduled(cron = "0 30 0 * * ?", zone = "Asia/Taipei")
+    
+	//排程執行週期設
+    @Scheduled(cron = "${mvp.110007.cron.expression}", zone = "${mvp.110007.cron.zone}")
+    
 	public void schedule() {
     	
     	log.info("█ █ █ █ █ 處理六日未回覆AI外撥 █ █ █ █ █");
@@ -129,7 +141,7 @@ public class Mvp110007Serv {
 		// (2.1) 查詢逾期 6日 未回覆清單
 		//SQLServer語法:	SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -6, GETDATE()), 112) AND FLAG = '1' ORDER BY ID
 		//MySQL語法:		SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 6 DAY) AND FLAG = '1' ORDER BY ID
-		List<EmailMaster> expiredList = this.dao.findOverdue6DaysAiCalling();
+		List<EmailMaster> expiredList = this.dao.findOverdue6DaysAiCalling(MUST_MONDAY);
 		if (! expiredList.isEmpty()) {
 			jobList.addAll(expiredList);
 		}
