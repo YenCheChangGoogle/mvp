@@ -418,9 +418,9 @@ public class ImportAiResultServ {
      * @param encodedLine ftp.ini 中的一行原始文字
      * @return 解碼後的明文字串
      */
-    private String decodeFtpCredential(String encodedLine) {
-        return new String(Base64.getDecoder().decode(encodedLine), StandardCharsets.UTF_8);
-    }
+    //private String decodeFtpCredential(String encodedLine) {
+    //    return new String(Base64.getDecoder().decode(encodedLine), StandardCharsets.UTF_8);
+    //}
 
     /**
      * 使用 Apache Commons Net FTPClient 以 Passive Mode 下載單一檔案。

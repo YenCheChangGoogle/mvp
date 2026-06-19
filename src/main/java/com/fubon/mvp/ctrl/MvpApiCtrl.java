@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fubon.mvp.serv.ImportAiResultServ;
+import com.fubon.mvp.serv.GenAiCallingRptServ;
 import com.fubon.mvp.serv.ImportAiResultToProcessServ;
 import com.fubon.mvp.serv.Mvc084000Serv;
 import com.fubon.mvp.serv.Mvc110001Serv;
@@ -67,6 +69,12 @@ public class MvpApiCtrl {
 	
 	@Autowired
 	private ImportAiResultToProcessServ importAiResultProcess;
+	
+	@Autowired
+	private ImportAiResultServ importAiResultServ;
+
+	@Autowired
+	private GenAiCallingRptServ genAiCallingRptServ;
 	
 	@Autowired
 	private Mvp110007Serv mvp110007Serv;
@@ -268,4 +276,89 @@ public class MvpApiCtrl {
 		return mvc310005.service(this.proxy.document(xml));
 	}
 
+	/**
+	 * 14. AI結果報表導入 (排程觸發)
+	 * @return 處理結果訊息
+	 */
+	@RequestMapping(
+		    value = "/importairesult",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
+	public String importAiResult() {
+		log.info("AI結果報表導入 (手動觸發)");
+		importAiResultServ.execute();
+		return "<response><status>success</status><message>importAiResult trigger success</message></response>";
+	}
+
+	/**
+	 * 15. AI外撥名單導出 (排程觸發)
+	 * @return 處理結果訊息
+	 */
+	@RequestMapping(
+		    value = "/genaicallingrpt",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
+	public String genAiCallingRpt() {
+		log.info("AI外撥名單導出 (手動觸發)");
+		genAiCallingRptServ.execute();
+		return "<response><status>success</status><message>genAiCallingRpt trigger success</message></response>";
+	}
+
+	/**
+	 * 16. AI外撥名單導出 (排程觸發) - GenAiCallingRpt
+	 * 透過網址手動觸發 AI 外撥名單導出排程，執行 RSA 私鑰解密 → SQL Server 查詢 → CSV 產生 → FTP 上傳
+	 * @return 處理結果訊息
+	 */
+	//http://localhost:8080/mvp/api/GenAiCallingRpt
+	@RequestMapping(
+		    value = "/GenAiCallingRpt",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
+	public String genAiCallingRptTrigger() {
+		log.info("AI外撥名單導出 (手動觸發 via GenAiCallingRpt API)");
+	    StringBuilder result = new StringBuilder();
+	    result.append("<response>");
+	    try {
+	        genAiCallingRptServ.execute();
+	        result.append("<status>success</status>");
+	        result.append("<message>GenAiCallingRpt 排程觸發成功，已開始執行 AI 外撥名單導出</message>");
+	    } catch (Exception ex) {
+	        log.error("GenAiCallingRpt 排程觸發失敗", ex);
+	        result.append("<status>error</status>");
+	        result.append("<message>").append(ex.getMessage()).append("</message>");
+	    }
+	    result.append("</response>");
+	    return result.toString();
+	}
+
+	/**
+	 * 17. AI結果報表導入 (排程觸發) - ImportAiResult
+	 * 透過網址手動觸發 AI 外撥結果報表導入排程，執行 RSA 私鑰解密 → FTP 下載 Excel → 解析並更新資料庫
+	 * @return 處理結果訊息
+	 */
+	//http://localhost:8080/mvp/api/ImportAiResult
+	@RequestMapping(
+		    value = "/ImportAiResult",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
+	public String importAiResultTrigger() {
+		log.info("AI結果報表導入 (手動觸發 via ImportAiResult API)");
+	    StringBuilder result = new StringBuilder();
+	    result.append("<response>");
+	    try {
+	        importAiResultServ.execute();
+	        result.append("<status>success</status>");
+	        result.append("<message>ImportAiResult 排程觸發成功，已開始執行 AI 外撥結果報表導入</message>");
+	    } catch (Exception ex) {
+	        log.error("ImportAiResult 排程觸發失敗", ex);
+	        result.append("<status>error</status>");
+	        result.append("<message>").append(ex.getMessage()).append("</message>");
+	    }
+	    result.append("</response>");
+	    return result.toString();
+	}
 }
