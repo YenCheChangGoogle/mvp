@@ -262,6 +262,12 @@
 							<include>ESAPI.properties</include>
 							<include>esapi-java-logging.properties</include>
 							<include>antisamy-esapi.xml</include>
+							
+							<include>validation.properties</include>
+							<include>messages.properties</include>
+							<include>messages_en.properties</include>
+							<include>messages_zh_TW.properties</include>
+							
 						</includes>
 					</resource>
 				</resources>
@@ -308,6 +314,12 @@
 							<include>ESAPI.properties</include>
 							<include>esapi-java-logging.properties</include>
 							<include>antisamy-esapi.xml</include>
+														
+							<include>validation.properties</include>
+							<include>messages.properties</include>
+							<include>messages_en.properties</include>
+							<include>messages_zh_TW.properties</include>
+							
 						</includes>
 					</resource>
 				</resources>
