@@ -147,7 +147,12 @@
 			<artifactId>xalan</artifactId>
 			<version>2.7.3</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>xalan</groupId>
+			<artifactId>serializer</artifactId>
+			<version>2.7.2</version>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/dom4j/dom4j -->
 		<dependency>
 			<groupId>org.dom4j</groupId>
@@ -178,7 +183,7 @@
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
 			<scope>runtime</scope>
-			
+
 			<!-- 如果跑的是 JDK 17 以上就改成 12.8.1.jre17 -->
 			<!-- <version>12.8.1.jre11</version> -->
 			
@@ -268,6 +273,8 @@
 							<include>messages_en.properties</include>
 							<include>messages_zh_TW.properties</include>
 							
+							<include>paper/email</include>
+							
 						</includes>
 					</resource>
 				</resources>
@@ -319,6 +326,8 @@
 							<include>messages.properties</include>
 							<include>messages_en.properties</include>
 							<include>messages_zh_TW.properties</include>
+							
+							<include>paper/email</include>
 							
 						</includes>
 					</resource>
