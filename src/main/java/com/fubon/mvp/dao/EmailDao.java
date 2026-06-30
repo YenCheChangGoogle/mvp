@@ -1,4 +1,4 @@
-package com.fubon.mvp.dao;
+﻿package com.fubon.mvp.dao;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,12 +126,21 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 5. 查詢明細清單。
+	 * 5.1. 查詢明細清單。
 	 * @param uuid 識別值
 	 * @return 清單	
 	 */
 	public List<EmailDetail> details(String uuid) {
-		return this.detailRepo.findAllByUuid(uuid);
+        return this.detailRepo.findAllByUuid(uuid);
+	}
+	
+	/**
+	 * 5.2. 查詢明細清單。(根據時間排序)
+	 * @param uuid 識別值
+	 * @return 清單	
+	 */
+	public List<EmailDetail> detailsByUuidOrderByChangeDateAscChangeTimeAsc(String uuid) {
+		return this.detailRepo.findAllByUuidOrderByChangeDateAscChangeTimeAsc(uuid);
 	}
 	
 	/**

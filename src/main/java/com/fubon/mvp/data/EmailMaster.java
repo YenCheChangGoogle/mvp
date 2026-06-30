@@ -156,22 +156,22 @@ public class EmailMaster extends SidClass {
 
 		// 電文型
 		this.tranCode = txNo;
-		this.uuid = doc.selectSingleNode("//UUID").getText().trim();
-		this.branch = doc.selectSingleNode("//BRANCH").getText().trim();
-		this.teller = doc.selectSingleNode("//TELLER_NO").getText().trim();
-		this.channel = doc.selectSingleNode("//CHNL").getText().trim();
-		this.subChannel = doc.selectSingleNode("//SUB_CHNL").getText().trim();
-		this.idNo = doc.selectSingleNode("//CUST_ID").getText().trim();
-		this.idType = doc.selectSingleNode("//ID_TYPE").getText().trim();
-		this.chName = doc.selectSingleNode("//CUST_NAME").getText().trim();
-		this.enName = doc.selectSingleNode("//ENG_NAME").getText().trim();
-		this.prevEmail = doc.selectSingleNode("//PREV_EMAIL_ADDR").getText().trim();
-		this.afterEmail = doc.selectSingleNode("//AFTER_EMAIL_ADDR").getText().trim();
-		this.changeDate = TimeUtil.dateE(new Date());
-		this.changeTime = TimeUtil.timeE(new Date());
-		this.online = doc.selectSingleNode("//ON_OFF_LINE").getText().trim();
-		this.reason = doc.selectSingleNode("//REASON").getText().trim();
-		this.remark = doc.selectSingleNode("//REMARK").getText();
+		try { this.uuid = doc.selectSingleNode("//UUID").getText().trim(); }catch(Exception ex) {}
+		try { this.branch = doc.selectSingleNode("//BRANCH").getText().trim(); }catch(Exception ex) {}
+		try { this.teller = doc.selectSingleNode("//TELLER_NO").getText().trim(); }catch(Exception ex) {}
+		try { this.channel = doc.selectSingleNode("//CHNL").getText().trim(); }catch(Exception ex) {}
+		try { this.subChannel = doc.selectSingleNode("//SUB_CHNL").getText().trim(); }catch(Exception ex) {}
+		try { this.idNo = doc.selectSingleNode("//CUST_ID").getText().trim(); }catch(Exception ex) {}
+		try { this.idType = doc.selectSingleNode("//ID_TYPE").getText().trim(); }catch(Exception ex) {}
+		try { this.chName = doc.selectSingleNode("//CUST_NAME").getText().trim(); }catch(Exception ex) {}
+		try { this.enName = doc.selectSingleNode("//ENG_NAME").getText().trim(); }catch(Exception ex) {}
+		try { this.prevEmail = doc.selectSingleNode("//PREV_EMAIL_ADDR").getText().trim(); }catch(Exception ex) {}
+		try { this.afterEmail = doc.selectSingleNode("//AFTER_EMAIL_ADDR").getText().trim(); }catch(Exception ex) {}
+		try { this.changeDate = TimeUtil.dateE(new Date()); }catch(Exception ex) {}
+		try { this.changeTime = TimeUtil.timeE(new Date()); }catch(Exception ex) {}
+		try { this.online = doc.selectSingleNode("//ON_OFF_LINE").getText().trim(); }catch(Exception ex) {}
+		try { this.reason = doc.selectSingleNode("//REASON").getText().trim(); }catch(Exception ex) {}
+		try { this.remark = doc.selectSingleNode("//REMARK").getText(); }catch(Exception ex) {}
 
 		// 延伸型
 		// (1) remark 欄位後面20個byte會寫入欄位 checker。
@@ -185,10 +185,10 @@ public class EmailMaster extends SidClass {
 		}
 
 		// 臨時型
-		this.queryUuid = doc.selectSingleNode("//QUERY_UUID").getText().trim();
-		this.beginDate = doc.selectSingleNode("//FROM_DATE").getText().trim();
-		this.endDate = doc.selectSingleNode("//TO_DATE").getText().trim();
-		this.nextKey = doc.selectSingleNode("//NEXT_KEY").getText().trim();
+		try { this.queryUuid = doc.selectSingleNode("//QUERY_UUID").getText().trim(); }catch(Exception ex) {}
+		try { this.beginDate = doc.selectSingleNode("//FROM_DATE").getText().trim(); }catch(Exception ex) {}
+		try { this.endDate = doc.selectSingleNode("//TO_DATE").getText().trim(); }catch(Exception ex) {}
+		try { this.nextKey = doc.selectSingleNode("//NEXT_KEY").getText().trim(); }catch(Exception ex) {}
 	}
 
 	//------------------------------------------------------------------------------
