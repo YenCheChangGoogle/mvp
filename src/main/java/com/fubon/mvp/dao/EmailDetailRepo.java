@@ -29,5 +29,6 @@ public interface EmailDetailRepo extends JpaRepository<EmailDetail, Long> {
 	 * @param uuid 識別值
 	 * @return 清單
 	 */
-	public List<EmailDetail> findAllByUuidOrderByChangeDateAscChangeTimeAsc(String uuid);
+	//public List<EmailDetail> findAllByUuidOrderByChangeDateAscChangeTimeAsc(String uuid);
+	public List<EmailDetail> findAllByUuidOrderByResponeDateAscResponeTimeAsc(String uuid);
 }

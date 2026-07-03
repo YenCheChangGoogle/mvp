@@ -409,7 +409,7 @@ public class GenAiCallingRptServ {
     private void processFtpUpload(String reportFile) throws Exception {
     	log.info("透過 FTP 上傳報表");
     	
-        File ftpIni = new File(SH_DIR, "ftp.ini");
+        File ftpIni = new File(SH_DIR, "ftp2.ini");
         if (!ftpIni.exists()) {
             log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
             return;

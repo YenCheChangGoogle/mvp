@@ -141,6 +141,8 @@ public class Mvp110007Serv {
 		// (2.1) 查詢逾期 6日 未回覆清單
 		//SQLServer語法:	SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < CONVERT(varchar(8), DATEADD(day, -6, GETDATE()), 112) AND FLAG = '1' ORDER BY ID
 		//MySQL語法:		SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE < DATE_SUB(NOW(), INTERVAL 6 DAY) AND FLAG = '1' ORDER BY ID
+		//
+		//相當於         SELECT * FROM EMAILMAS WHERE STATUS = '00' AND TX_STATUS = '13' AND CHG_DATE BETWEEN 起日 AND 起=訖日 AND FLAG = '1' ORDER BY CHG_DATE ASC
 		List<EmailMaster> expiredList = this.dao.findOverdue6DaysAiCalling(MUST_MONDAY);
 		if (! expiredList.isEmpty()) {
 			jobList.addAll(expiredList);

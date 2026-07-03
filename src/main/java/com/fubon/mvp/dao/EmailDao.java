@@ -139,8 +139,9 @@ public class EmailDao {
 	 * @param uuid 識別值
 	 * @return 清單	
 	 */
-	public List<EmailDetail> detailsByUuidOrderByChangeDateAscChangeTimeAsc(String uuid) {
-		return this.detailRepo.findAllByUuidOrderByChangeDateAscChangeTimeAsc(uuid);
+	public List<EmailDetail> detailsByUuidOrderByResponeDateAscResponeTimeAsc(String uuid) {
+		//return this.detailRepo.findAllByUuidOrderByChangeDateAscChangeTimeAsc(uuid);
+		return this.detailRepo.findAllByUuidOrderByResponeDateAscResponeTimeAsc(uuid);
 	}
 	
 	/**

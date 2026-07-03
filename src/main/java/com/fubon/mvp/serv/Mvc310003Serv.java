@@ -79,10 +79,10 @@ public class Mvc310003Serv {
 				log.warn("database : (310003) master entity was empty.");
 				return this.response(doc, false, 1).asXML();
 			}
-			else if("99".equals(entity.getStatus())) {
-				log.warn("database : (310003) master entity was empty.");
-				return this.response(doc, false, 2).asXML();
-			}
+			//else if("99".equals(entity.getStatus())) {
+			//	log.warn("database : (310003) master entity was empty.");
+			//	return this.response(doc, false, 2).asXML();
+			//}
 		}
 		else if(master.getIdNo()!=null && master.getIdNo().length()>0) {
 			entity=this.dao.idNo(master.getIdNo());
@@ -90,10 +90,10 @@ public class Mvc310003Serv {
 				log.warn("database : (310003) master entity was empty.");
 				return this.response(doc, false, 1).asXML();
 			}
-			else if("99".equals(entity.getStatus())) {
-				log.warn("database : (310003) master entity was empty.");
-				return this.response(doc, false, 2).asXML();
-			}
+			//else if("99".equals(entity.getStatus())) {
+			//	log.warn("database : (310003) master entity was empty.");
+			//	return this.response(doc, false, 2).asXML();
+			//}
 		}
 		else {
 			log.warn("必要條件無輸入 UUID 與 身分字號");
@@ -102,7 +102,7 @@ public class Mvc310003Serv {
 		
 		// 5. 讀取明細清單 (t2)，並依 t1.ID, t2.CHG_DATE, t2.CHG_TIME 排序。
 		//List<EmailDetail> details = this.dao.details(queryUuid);
-		List<EmailDetail> details = this.dao.detailsByUuidOrderByChangeDateAscChangeTimeAsc(queryUuid);
+		List<EmailDetail> details = this.dao.detailsByUuidOrderByResponeDateAscResponeTimeAsc(queryUuid);
 
 		// 6. 返回下行電文。
 		log.info("Mvc310003Serv : OK !");
@@ -170,8 +170,8 @@ public class Mvc310003Serv {
 			Element repeat = body.addElement("TxRepeat");
 			
 			repeat.addElement("QUERY_UUID").setText(EmptyUtil.orEmpty(detail.getUuid()));
-			repeat.addElement("TX_DATE").setText(EmptyUtil.orEmpty(detail.getChangeDate()));
-			repeat.addElement("TX_TIME").setText(EmptyUtil.orEmpty(detail.getChangeTime()));
+			repeat.addElement("RESP_DATE").setText(EmptyUtil.orEmpty(detail.getResponeDate()));
+			repeat.addElement("RESP_TIME").setText(EmptyUtil.orEmpty(detail.getResponeTime()));
 			repeat.addElement("STATUS").setText(EmptyUtil.orEmpty(master.getStatus()));
 			repeat.addElement("TX_STATUS").setText(EmptyUtil.orEmpty(detail.getTxStatus()));
 

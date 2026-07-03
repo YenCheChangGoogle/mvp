@@ -205,7 +205,7 @@ public class ImportAiResultServ {
             // -----------------------------------------------------------------
             log.info("步驟4 FTP 下載 {}", aiFilename);
             
-            File ftpIni = new File(SH_DIR, "ftp.ini");
+            File ftpIni = new File(SH_DIR, "ftp2.ini");
             if (!ftpIni.exists()) {
                 log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
                 return;
