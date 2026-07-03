@@ -4,14 +4,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fubon.mvp.serv.ImportAiResultServ;
 import com.fubon.mvp.serv.GenAiCallingRptServ;
+import com.fubon.mvp.serv.ImportAiResultServ;
 import com.fubon.mvp.serv.ImportAiResultToProcessServ;
 import com.fubon.mvp.serv.Mvc084000Serv;
 import com.fubon.mvp.serv.Mvc110001Serv;
@@ -253,6 +255,12 @@ public class MvpApiCtrl {
 		return mvc310003.service(this.proxy.document(xml));
 	}
 	
+	//測試
+	//http://localhost:8080/mvp/api/310003?xml=<Tx><TxBody><CUST_ID>A094910002</CUST_ID><QUERY_UUID>0Z89110003121809494600007</QUERY_UUID></TxBody></Tx>
+	//@GetMapping("/310003")
+	//public String mvc310003_get(@RequestParam(required = false, defaultValue = "") String xml) {
+	//    return mvc310003.service(this.proxy.document(xml));
+	//}
 
 	/**
 	 * 12. MVC310004 - EMAILDTL明細查詢

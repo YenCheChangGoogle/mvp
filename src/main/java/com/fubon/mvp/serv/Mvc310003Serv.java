@@ -65,8 +65,8 @@ public class Mvc310003Serv {
 
 		// 3. 檢查輸入格式。
 		if (master.invalid310003()) {
-			log.warn("check : (310003) argument errors.");
-			return this.response(doc, false).asXML();
+			log.warn("check : (310003) argument errors 輸入參數沒通過驗證");
+			return this.response(doc, false, 0).asXML();
 		}
 		valid = true;
 		
@@ -75,23 +75,29 @@ public class Mvc310003Serv {
 		String queryUuid = master.getQueryUuid();
 		if(queryUuid!=null && queryUuid.length()>0) {
 			entity = this.dao.uuid(queryUuid);
-
-			if (entity == null || "99".equals(entity.getStatus())) {
+			if (entity == null) {
 				log.warn("database : (310003) master entity was empty.");
-				return this.response(doc, false).asXML();
+				return this.response(doc, false, 1).asXML();
+			}
+			else if("99".equals(entity.getStatus())) {
+				log.warn("database : (310003) master entity was empty.");
+				return this.response(doc, false, 2).asXML();
 			}
 		}
 		else if(master.getIdNo()!=null && master.getIdNo().length()>0) {
 			entity=this.dao.idNo(master.getIdNo());
-			
-			if (entity == null || "99".equals(entity.getStatus())) {
+			if (entity == null) {
 				log.warn("database : (310003) master entity was empty.");
-				return this.response(doc, false).asXML();
+				return this.response(doc, false, 1).asXML();
+			}
+			else if("99".equals(entity.getStatus())) {
+				log.warn("database : (310003) master entity was empty.");
+				return this.response(doc, false, 2).asXML();
 			}
 		}
 		else {
 			log.warn("必要條件無輸入 UUID 與 身分字號");
-			return this.response(doc, false).asXML();
+			return this.response(doc, false, 1).asXML();
 		}
 		
 		// 5. 讀取明細清單 (t2)，並依 t1.ID, t2.CHG_DATE, t2.CHG_TIME 排序。
@@ -110,14 +116,25 @@ public class Mvc310003Serv {
 	/**
 	 * 返回失敗/空值下行電文。
 	 */
-	private Document response(Document doc, boolean valid) {
+	private Document response(Document doc, boolean valid, int errorType) {
 		
 		Element root = doc.getRootElement();
 		Element body = root.element("TxBody");
 		if (body != null) root.remove(body);
 		body = root.addElement("TxBody");
 		
-		String[] messages = valid ? this.descDao.success() : this.descDao.invalid();
+		String[] messages = null;
+		
+		if(errorType==0) {
+			messages=valid ? this.descDao.success() : this.descDao.invalid();
+		}
+		else if(errorType==1) {
+			messages = valid ? this.descDao.success() : this.descDao.notfound();
+		}
+		else {
+			messages = valid ? this.descDao.success() : this.descDao.notfound();
+		}
+		
 		body.addElement("MESSAGE").setText(messages[1]);
 		body.addElement("MESSAGE_CODE").setText(messages[0]);
 		body.addElement("TX_DATE").setText(TimeUtil.dateE(new Date()));

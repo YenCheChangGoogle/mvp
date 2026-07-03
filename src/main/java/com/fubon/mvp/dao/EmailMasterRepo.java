@@ -27,6 +27,8 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
 	 * @return 清單
 	 */
 	public List<EmailMaster> findAllByIdNoAndStatusOrderByChangeDateAscChangeTimeAsc(String idNo, String status);
+	
+	public List<EmailMaster> findAllByIdNoOrderByChangeDateAscChangeTimeAsc(String idNo);
 
 	/**
 	 * 3. 依據交易狀態查詢。

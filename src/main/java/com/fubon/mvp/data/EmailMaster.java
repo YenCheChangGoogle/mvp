@@ -172,18 +172,7 @@ public class EmailMaster extends SidClass {
 		try { this.online = doc.selectSingleNode("//ON_OFF_LINE").getText().trim(); }catch(Exception ex) {}
 		try { this.reason = doc.selectSingleNode("//REASON").getText().trim(); }catch(Exception ex) {}
 		try { this.remark = doc.selectSingleNode("//REMARK").getText(); }catch(Exception ex) {}
-
-		// 延伸型
-		// (1) remark 欄位後面20個byte會寫入欄位 checker。
-		int len = this.remark.length();
-		if (len == 500) {
-			this.checker = this.remark.substring(480).trim();
-			this.remark = this.remark.substring(0, 480).trim();
-		} else {
-			this.checker = "";
-			this.remark = this.remark.trim();
-		}
-
+		
 		// 臨時型
 		try { this.queryUuid = doc.selectSingleNode("//QUERY_UUID").getText().trim(); }catch(Exception ex) {}
 		try { this.beginDate = doc.selectSingleNode("//FROM_DATE").getText().trim(); }catch(Exception ex) {}
@@ -235,11 +224,17 @@ public class EmailMaster extends SidClass {
 	}
 
 	/**
-	 * 4. ??????(MVC310003)?
-	 * @return ???
+	 * 4. 必填欄位 驗證是否合法
+	 * @return 布林值
 	 */
 	public boolean invalid310003() {
-		return EmptyUtil.is(this.uuid, this.branch, this.teller, this.idNo, this.idType, this.queryUuid);
+		
+		if(this.queryUuid!=null && this.queryUuid.trim().length()>0) return false;
+		if(this.idNo!=null && this.idNo.trim().length()>0) return false;
+		//if(this.uuid!=null && this.uuid.trim().length()>0) return false;
+		return true;
+		
+		//return EmptyUtil.is(this.uuid, this.branch, this.teller, this.idNo, this.idType, this.queryUuid);
 	}
 
 	/**

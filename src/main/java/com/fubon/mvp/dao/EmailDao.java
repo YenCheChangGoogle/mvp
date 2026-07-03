@@ -284,7 +284,17 @@ public class EmailDao {
 	 */
 	public EmailMaster idNo(String idNo) {
 		EmailMaster m=null;
+		
 		List<EmailMaster> list= this.masterRepo.findAllByIdNoAndStatusOrderByChangeDateAscChangeTimeAsc(idNo, "00");
+		//List<EmailMaster> list= this.masterRepo.findAllByIdNoOrderByChangeDateAscChangeTimeAsc(idNo);
+		
+		log.info("依據身分證字號 "+idNo+" 取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y 找到幾筆="+list.size());
+		
+	
+		if(list.size()==0) {
+			log.warn("依據身分證字號 "+idNo+" 取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y 但卻無資料符合條件");
+		}
+		
 		for(EmailMaster em:list) {
 			
 			//排除 STATUS 不等於 00
