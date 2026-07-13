@@ -173,6 +173,17 @@ public class EmailMaster extends SidClass {
 		try { this.reason = doc.selectSingleNode("//REASON").getText().trim(); }catch(Exception ex) {}
 		try { this.remark = doc.selectSingleNode("//REMARK").getText(); }catch(Exception ex) {}
 		
+		// 延伸型
+		// (1) remark 欄位後面20個byte會寫入欄位 checker
+		//int len = this.remark.length();
+		//if (len == 500) {
+		//	this.checker = this.remark.substring(480).trim();
+		//	this.remark = this.remark.substring(0, 480).trim();
+		//} else {
+		//	this.checker = "";
+		//	this.remark = this.remark.trim();
+		//}
+		
 		// 臨時型
 		try { this.queryUuid = doc.selectSingleNode("//QUERY_UUID").getText().trim(); }catch(Exception ex) {}
 		try { this.beginDate = doc.selectSingleNode("//FROM_DATE").getText().trim(); }catch(Exception ex) {}
