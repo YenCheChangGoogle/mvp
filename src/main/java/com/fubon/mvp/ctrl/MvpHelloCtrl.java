@@ -1,4 +1,4 @@
-﻿package com.fubon.mvp.ctrl;
+package com.fubon.mvp.ctrl;
 
 import java.util.Calendar;
 import java.util.Date;

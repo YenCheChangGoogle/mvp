@@ -1,4 +1,4 @@
-﻿package com.fubon.mvp.dao;
+package com.fubon.mvp.dao;
 
 import java.util.ArrayList;
 import java.util.List;
