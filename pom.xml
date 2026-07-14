@@ -5,7 +5,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.15</version>
+		<!-- 
+			其中 2.7.18 是 Spring Boot 2.x 最後一個 OSS 免費版本(2023/11 EOL)。
+		    此版本本身無法修補 2024~2026 年才揭露的 Spring Framework / Spring Security 核心 CVE,
+		    這些必須靠下方 dependencyManagement 覆寫個別套件版本,或長期規劃升級到 Spring Boot 3.x/4.x 
+		-->
+		<version>2.7.18</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.fubon</groupId>
@@ -17,8 +22,192 @@
 	<properties>
 		<java.version>1.8</java.version>
 		<maven.test.skip>true</maven.test.skip>
-		<log4j2.version>2.21.1</log4j2.version>
+
+		<!-- 
+			===== Sonatype 掃描報告(2026/07/07)修補用版本控管 =====
+		    注意：這些屬性必須實際被下方 <dependencyManagement> 引用才會生效，
+		    單純宣告 property 不會覆寫 Spring Boot Parent BOM 管理的版本。
+		    升版後務必執行 `mvn dependency:tree -Dverbose` 確認實際生效版本，
+		    並完整跑過迴歸測試（Tomcat/Netty/Spring Security 中間有行為變更）。 
+		-->
+		<log4j2.version>2.24.3</log4j2.version>
+		<netty.version>4.1.135.Final</netty.version>
+		<tomcat.version>9.0.120</tomcat.version>
+		<bouncycastle.version>1.85</bouncycastle.version>
+		<snakeyaml.version>2.2</snakeyaml.version>
+		<commons-compress.version>1.27.1</commons-compress.version>
+		<commons-text.version>1.13.0</commons-text.version>
+		<commons-io.version>2.16.1</commons-io.version>
+		<commons-collections4.version>4.5.0</commons-collections4.version>
+		<httpcore5.version>5.3.1</httpcore5.version>
+		<jetty.version>9.4.57.v20241219</jetty.version>
+		<poi.version>5.2.5</poi.version>
+		<mysql.version>8.0.33</mysql.version>
+		<jackson.version>2.17.2</jackson.version>
+		<spring-security.version>5.8.13</spring-security.version>
+		<spring-data-bom.version>2021.2.18</spring-data-bom.version>
+		<xerces.version>2.12.2</xerces.version>
+		
+		<!-- 
+			htmlunit 官方已停止維護 net.sourceforge.htmlunit，主線遷移到 org.htmlunit。
+		    4.x 版需要 Java 11+，與目前 java.version=1.8 衝突，需另外評估，見下方註解
+		-->
+		<htmlunit.version>2.70.0</htmlunit.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- Jackson: CVE-2026-54512/54513/54514/54515/54518 等反序列化漏洞 -->
+			<dependency>
+				<groupId>com.fasterxml.jackson</groupId>
+				<artifactId>jackson-bom</artifactId>
+				<version>${jackson.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Netty: CVE-2026-45674/47691(10.0分)、CVE-2026-42581/42584 等一系列 RCE/DoS -->
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-bom</artifactId>
+				<version>${netty.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Spring Security: CVE-2023-34034(9.8分,認證繞過)、CVE-2026-22732 -->
+			<dependency>
+				<groupId>org.springframework.security</groupId>
+				<artifactId>spring-security-bom</artifactId>
+				<version>${spring-security.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Spring Data: CVE-2026-41695/41716/41711/41721(8.2~8.7分, SpEL注入) -->
+			<dependency>
+				<groupId>org.springframework.data</groupId>
+				<artifactId>spring-data-bom</artifactId>
+				<version>${spring-data-bom.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Tomcat embed: CVE-2025-24813/31651(9.8分)、CVE-2025-66614、CVE-2026-43512 等 -->
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-core</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-websocket</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-el</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat.embed</groupId>
+				<artifactId>tomcat-embed-jasper</artifactId>
+				<version>${tomcat.version}</version>
+			</dependency>
+
+			<!-- SnakeYAML: CVE-2022-1471(9.8分, 反序列化RCE) -->
+			<dependency>
+				<groupId>org.yaml</groupId>
+				<artifactId>snakeyaml</artifactId>
+				<version>${snakeyaml.version}</version>
+			</dependency>
+
+			<!-- Commons Text: CVE-2022-42889(9.8分, 類Log4Shell的插值注入) -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-text</artifactId>
+				<version>${commons-text.version}</version>
+			</dependency>
+
+			<!-- Commons Compress: CVE-2021-35515/35516/35517/36090 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>${commons-compress.version}</version>
+			</dependency>
+
+			<!-- Commons IO: CVE-2024-47554 -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${commons-io.version}</version>
+			</dependency>
+
+			<!-- Commons Collections 3.x 為停止維護的舊系列，改鎖 4.x 系列避免拉入舊版 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-collections4</artifactId>
+				<version>${commons-collections4.version}</version>
+			</dependency>
+
+			<!-- HttpCore5: CVE-2026-54399/54428 -->
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5</artifactId>
+				<version>${httpcore5.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5-h2</artifactId>
+				<version>${httpcore5.version}</version>
+			</dependency>
+
+			<!-- Jetty(由 htmlunit 帶入): CVE-2026-2332(9.1分)、CVE-2025-11143 -->
+			<dependency>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-http</artifactId>
+				<version>${jetty.version}</version>
+			</dependency>
+
+			<!-- Apache POI: sonatype-2023-4187(7.5分) -->
+			<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi</artifactId>
+				<version>${poi.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi-ooxml</artifactId>
+				<version>${poi.version}</version>
+			</dependency>
+
+			<!-- BouncyCastle: CVE-2025-14813(9.3分)、CVE-2026-5598 -->
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
+
+			<!-- 
+				xerces: CVE-2017-7503(9.8分, XXE)。注意：2.12.2 已是官方最後版本，
+			    上游已無更新，剩餘風險需靠程式面關閉 DTD/外部實體解析來補強，
+			    無法單靠升版消除，建議另開 Fortify 風險接受文件追蹤
+			-->
+			<dependency>
+				<groupId>xerces</groupId>
+				<artifactId>xercesImpl</artifactId>
+				<version>${xerces.version}</version>
+			</dependency>
+
+			<!-- MySQL 官方新 groupId，取代已停止維護的 mysql:mysql-connector-java -->
+			<dependency>
+				<groupId>com.mysql</groupId>
+				<artifactId>mysql-connector-j</artifactId>
+				<version>${mysql.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -85,21 +274,21 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
-			<version>2.21.1</version>
+			<version>${log4j2.version}</version>
 			<scope>provided</scope>
 			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.21.1</version>
+			<version>${log4j2.version}</version>
 			<scope>provided</scope>
 			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-to-slf4j</artifactId>
-			<version>2.21.1</version>
+			<version>${log4j2.version}</version>
 			<scope>provided</scope>
 			<type>pom</type>
 		</dependency>
@@ -137,10 +326,16 @@
 		</dependency>
 
 		<!-- client -->
-		<!-- https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit -->
+		<!-- 
+			https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit
+		    TODO: net.sourceforge.htmlunit 官方已停止維護，主線已遷移到 org.htmlunit:htmlunit(4.x)，
+		    但 4.x 需要 Java 11+，目前專案 java.version=1.8，無法直接換 groupId。
+		    這裡先鎖到 2.x 系列最後一版止血，長期仍建議規劃 JDK 升級後改用 org.htmlunit
+		-->
 		<dependency>
 			<groupId>net.sourceforge.htmlunit</groupId>
 			<artifactId>htmlunit</artifactId>
+			<version>${htmlunit.version}</version>
 		</dependency>			
 		<dependency>
 			<groupId>xalan</groupId>
@@ -189,11 +384,10 @@
 			
 		</dependency>
 
-		<!-- BouncyCastle Provider（AES 解密用） -->
+		<!-- BouncyCastle Provider（AES 解密用），版本由上方 dependencyManagement 統一控管 -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
-			<version>1.79</version>
 		</dependency>
 		<!-- Apache Commons Net（FTP 上傳用） -->
 		<dependency>
@@ -208,11 +402,10 @@
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
-		<!-- Apache POI for Excel parsing (AI result report) -->
+		<!-- Apache POI for Excel parsing (AI result report)，版本由上方 dependencyManagement 統一控管 -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>4.1.2</version>
 		</dependency>
 
 		<dependency>
@@ -237,20 +430,19 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- SpringBoot2.7.18是配合到8.0.33 -->
 		<!--
+			[測試環境使用MySQL的時候]
+			原 mysql:mysql-connector-java:8.0.12 (CVE-2018-3258/2023-22102 等多個高危漏洞)
+		    官方 groupId 已改為 com.mysql，版本由上方 dependencyManagement 統一控管(8.0.33)。
+		    注意：這是 driver 內部 groupId/artifactId 變更，不是單純版號升級，
+		    需確認程式碼中 Class.forName("com.mysql.cj.jdbc.Driver") 等寫法與連線URL相容(通常相容)，
+		    並在測試環境完整跑過 DB 連線/交易相關測試
+		-->
 		<dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>8.0.33</version>
-        </dependency>
-        -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.12</version>
-        </dependency>
-        
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<profiles>
