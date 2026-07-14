@@ -417,9 +417,9 @@ public class ImportAiResultToProcessServ {
 		this.dao.save(ed);
 
 		// EMAILMAS 更新主檔狀態
-		master.setTranCode("110001");
+		master.setTranCode("110006");
 		master.setStatus("00");
-		master.setTxStatus("13");
+		master.setTxStatus("17");
 		master.setFlag("1");
 		master.setErrorCode("");
 		this.dao.save(master);

@@ -56,16 +56,18 @@ public class EmailWsClient extends WebServiceGatewaySupport {
 		request.setSubject("台北富邦銀行電子郵件確認通知/Notice of E-mail Address Confirmation");
 		// (7) content	郵件內容
 		request.setContent(this.content.email(master));
+		log.info("################# 信件內容字數="+request.getContent().length());
 		// (8) uid UUID (2021/12/21 16:55)
 		request.setUID(master.getUuid());
 		log.info("request: " + request.toString());
-
+		
 		// 2. 創建響應對象。
 		SendToOneUIDResponse response = null;
 		try {
 			response = (SendToOneUIDResponse) super.getWebServiceTemplate()
 				.marshalSendAndReceive(request, this.soapAction);
 		} catch (Exception ex) {
+			ex.printStackTrace();
 			log.error(ex.toString());
 			return -1;
 		}

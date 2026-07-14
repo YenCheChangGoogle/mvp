@@ -46,46 +46,52 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.FileOutputStream;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 /**
  * ============================================================================
- * 富邦MVP - GenAiCallingRptServ (AI外撥報表導出服務)
+ * 富邦MVP - AiEmailResultRptServ (AI外撥報表導出服務)
  * ============================================================================
  * @author 張晏哲
  * @category 服務類
  *
  * 【功能概述】
  * 完全模擬 gen_ai_calling_rpt.sh 的執行邏輯，移除平台依賴
- * 每日凌晨 1:00 自動觸發，執行以下流程：
+ * 每日凌晨 1:40 自動觸發，執行以下流程：
  *   1. RSA 私鑰解密密碼檔，取得 SQL Server 連線資訊
  *   2. 查詢主節點，確認當前機器是否為 master（僅 master 執行）
- *   3. 從 EMAILMAS 資料庫撈取 FLAG='2' 且 PHONE 不為空的外撥候選名單
- *   4. 將資料寫入 CSV 報表，並清除多餘空白
+ *   3. 從資料庫撈取
+ *   4. 將資料寫入 EXCEL 報表，並清除多餘空白
  *   5. 透過 FTP 上傳至合作廠商 FTP 伺服器
  *   6. 清理解密的設定檔（避免明碼密碼殘留）
  *
  * 【執行排程】
- *   cron = "0 0 1 * * ?"  → 台灣時間每日凌晨 1:00
+ *   cron = "0 0 3 * * ?"  → 台灣時間每日凌晨 3:00
  *
  * 【依賴環境】
  *   - BouncyCastle JCE provider  → RSA 私鑰解密 mvpsqlserver.conf.enc
  *   - Microsoft JDBC Driver     → 查詢 SQL Server
- *   - Apache Commons Net FTP    → 上傳 CSV 至合作廠商 FTP 伺服器
- *   - ftp.ini                   → 存放編碼後的 FTP 帳號密碼（第1列=帳號, 第2列=密碼）
+ *   - Apache Commons Net FTP    → 上傳 EXCEL 至合作廠商 FTP 伺服器
+ *   - ftp2.ini                   → 存放編碼後的 FTP 帳號密碼（第1列=帳號, 第2列=密碼）
  *
  * 【資料流程】
- *   EMAILMAS 資料庫 (FLAG='2' AND PHONE NOT NULL)
+ *   EMAILMAS 資料庫 
  *     ↓ SQL 查詢 + JDBC 導出
- *   {REPORTS_DIR}/AI_CALLING_YYYYMMDD.csv
+ *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx
  *     ↓ 清除空白
- *   {REPORTS_DIR}/AI_CALLING_YYYYMMDD.csv_CLEAN
+ *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx_CLEAN
  *     ↓ rename 覆蓋原檔
- *   {REPORTS_DIR}/AI_CALLING_YYYYMMDD.csv
+ *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx
  *     ↓ FTP 上傳
  *   合作廠商 FTP /MVP/810SCOMM
  *
  * 【CSV 欄位結構】
- *   手機號碼, 客戶ID, 客戶姓名, 本次外撥目的, TTS1, 變數1, 變數2, 變數3,
- *   TTS2, TTS3, TTS4, SMS1, SMS2, SMS3, SMS4, SMS5, SMSDefault
+ *   客戶統編, 客戶姓名, EMAIL, EMAIL異動日期, EMAIL異動時間, AI重發確認信, 重發時間, 回覆結果
  *
  * 【與 ImportAiResultServ 的關聯】
  *   GenAiCallingRptServ   (01:00) → 導出外撥名單 → 上傳 FTP
@@ -99,8 +105,8 @@ import org.springframework.stereotype.Service;
  * ============================================================================
  */
 @Service
-public class GenAiCallingRptServ {
-    private static final Logger log = LoggerFactory.getLogger(GenAiCallingRptServ.class);
+public class AiEmailResultRptServ {
+    private static final Logger log = LoggerFactory.getLogger(AiEmailResultRptServ.class);
 
     // BouncyCastle provider name
     private static final String BC_PROVIDER = "BC";
@@ -121,8 +127,8 @@ public class GenAiCallingRptServ {
     @Value("${mvp.sh.dir:/home/mvpadm/sh}")
     private String SH_DIR;
 
-    @Value("${mvp.ai_calling_filename_prefix:AI_CALLING_}")
-    private String AI_CALLING_FILENAME_PREFIX;
+    @Value("${mvp.ai_report_filename_prefix:AI_REPORT_}")
+    private String AI_REPORT_FILENAME_PREFIX;
     
     @Value("${mvp.decodeFtpCredential:b77a5c561934e089}")
     private String DECODE_FTP_CREDENTIAL;
@@ -134,17 +140,17 @@ public class GenAiCallingRptServ {
     //@Scheduled(cron = "0 0 1 * * ?", zone = "Asia/Taipei")
 	
     //排程執行週期設
-    @Scheduled(cron = "${mvp.110007.GenAiCallingRpt.expression}", zone = "${mvp.110007.cron.zone}")
+    @Scheduled(cron = "${mvp.110007.AiEmailResultRpt.expression}", zone = "${mvp.110007.cron.zone}")
     
     public void execute() {
-        log.info("Starting AI Calling Report process...");
+        log.info("Starting AI Report process...");
         try {
             runProcess();
-            log.info("AI Calling Report process completed successfully.");
+            log.info("AI Report process completed successfully.");
         } catch (SkipExecutionException e) {
             log.info("Skipping execution: {}", e.getMessage());
         } catch (Exception e) {
-            log.error("Critical error during AI Calling Report process: ", e);
+            log.error("Critical error during AI Report process: ", e);
         }
     }
     
@@ -203,46 +209,35 @@ public class GenAiCallingRptServ {
             //   c. 將資料附加至 CSV 檔案
             //   d. 清除多餘空白，再 mv 覆蓋原檔
             // -----------------------------------------------------------------
-            String reportFile = AI_CALLING_FILENAME_PREFIX + rundate + ".csv";
+            String reportFile = AI_REPORT_FILENAME_PREFIX + rundate + ".xlsx";
             Path reportPath = Paths.get(REPORTS_DIR, reportFile);
-
-            // 寫入 CSV 標頭（17 欄位）
+            
+         // 寫入 CSV 標頭（17 欄位）
             writeCsvHeader(reportPath);
 
             // 執行 SQL 提取資料並附加至 CSV
             String dataQuery = "set nocount on;\n" +
-                "select RTRIM(PHONE) as [手機號碼],\n" +
-                "       RTRIM(ID) as [客戶ID],\n" +
-                "       RTRIM(NAME) as [客戶姓名],\n" +
-                "       '有關您變更留存於本行的電子郵件信箱之相關訊息要通知您' as [本次外撥目的],\n" +
-                "       '您好，由於您申請變更您留存於本行的電子郵件信箱，但您尚未回覆確認您的電子郵件信箱，故本行目前尚未啟用您的電子郵件信箱，提醒您儘速完成電子郵件信箱確認回覆。' as TTS1,\n" +
-                "       'NA' as [變數1],\n" +
-                "       'NA' as [變數2],\n" +
-                "       'NA' as [變數3],\n" +
-                "       'NA' as TTS2,\n" +
-                "       'NA' as TTS3,\n" +
-                "       'NA' as TTS4,\n" +
-                "       'NA' as SMS1,\n" +
-                "       'NA' as SMS2,\n" +
-                "       'NA' as SMS3,\n" +
-                "       'NA' as SMS4,\n" +
-                "       'NA' as SMS5,\n" +
-                "       'NA' as SMSDefault\n" +
-                "from EMAILMAS \n" +
-                "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '';";
+                "select M.ID AS '客戶統編',\n" +
+                "       M.NAME AS '客戶姓名',\n" +
+                "       M.AFTER_EMAIL_ADDR AS 'EMAIL',\n" +
+                "       SUBSTRING(M.CHG_DATE,1,4) + '/' + " +
+                "       SUBSTRING(M.CHG_DATE,5,2) + '/' + " +
+                "       SUBSTRING(M.CHG_DATE,7,2) as 'EMAIL異動日期',\n" +
+                "       SUBSTRING(M.CHG_TIME,1,2) + ':' + " +
+                "       SUBSTRING(M.CHG_TIME,3,2) + ':' + " +
+                "       SUBSTRING(M.CHG_TIME,5,2) as 'EMAIL異動時間',\n" +
+                "       case when (M.STATUS is not null and M.STATUS <>'02') then '重發成功' else '重發失敗' end as 'AI重發確認信',\n" +
+                "       SUBSTRING(D.RESP_DATE,1,4) + '/' + \n" +
+                "       SUBSTRING(D.RESP_DATE,5,2) + '/' + \n" +
+                "       SUBSTRING(D.RESP_DATE,7,2) as '重發日期',\n" +
+                "       SUBSTRING(D.RESP_TIME,1,2) + ':' + " +
+                "       SUBSTRING(D.RESP_TIME,3,2) + ':' + " +
+                "       SUBSTRING(D.RESP_TIME,5,2) as '重發時間',\n" +
+                "       case when (M.STATUS='02') then '02:失敗' when (M.STATUS='01') then '01:完成成功'  else '00:處理中' end as '回覆結果'\n" +
+                "from EMAILMAS M left join EMAILDTL D on M.UUID=D.UUID \n" +
+                "where D.RESP_DATE > convert(varchar,DATEADD(day,-7,'20260706'),112) AND D.FLAG='2' AND D.TX_STATUS='11' order by M.CHG_DATE,M.CHG_TIME;";
 
-            exportCsvData(ip, port, database, user, password, dataQuery, reportPath);
-
-            // 用 Java 清除 CSV 中的多餘空白 (對應 sed 's/ *//g')
-            String cleanFile = reportFile + "_CLEAN";
-            Path cleanPath = Paths.get(REPORTS_DIR, cleanFile);
-            try {
-                cleanWhitespace(reportPath, cleanPath);
-                Files.move(cleanPath, reportPath, StandardCopyOption.REPLACE_EXISTING);
-            } catch (Exception e) {
-                Files.deleteIfExists(cleanPath);
-                throw e;
-            }
+            exportData(ip, port, database, user, password, dataQuery, reportPath);
 
             // -----------------------------------------------------------------
             // 步驟 5：透過 FTP 上傳報表至合作廠商（取代 ftp shell）
@@ -290,35 +285,10 @@ public class GenAiCallingRptServ {
         Path encPath = Paths.get(HOME, "mvpsqlserver.conf.enc");
         byte[] encryptedBytes = Files.readAllBytes(encPath);
         
-        
-        
-        
-        
-        /*
-        // openssl rsautl 的 block size 受限於 key size；大檔案需分塊解密
-        int blockSize = (privateKey.getModulus().bitLength() / 8) - 11; // PKCS1 padding overhead
-        ByteArrayOutputStream decryptedOutput = new ByteArrayOutputStream();
-
-        for (int i = 0; i < encryptedBytes.length; i += blockSize) {
-            int remaining = encryptedBytes.length - i;
-            int chunkSize = Math.min(blockSize, remaining);
-            byte[] chunk = Arrays.copyOfRange(encryptedBytes, i, i + chunkSize);
-            byte[] decryptedChunk = cipher.doFinal(chunk);
-            decryptedOutput.write(decryptedChunk);
-        }
-
-        // 寫入解密後的設定檔
-        Files.write(outputConfPath, decryptedOutput.toByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        */
-        
         byte[] decrypted = cipher.doFinal(encryptedBytes);
         Files.write(outputConfPath, decrypted, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        
-        
-        
-        
-        
-        log.info("Decrypted mvpsqlserver.conf successfully.");
+                   
+                log.info("Decrypted mvpsqlserver.conf successfully.");
     }
 
     // =================================================================
@@ -340,12 +310,12 @@ public class GenAiCallingRptServ {
             return "";
         }
     }
-
+    
     // =================================================================
-    // 【步驟 4a】寫入 CSV 標頭
+    // 【步驟 4a】寫入 EXCEL 標頭
     // =================================================================
     private void writeCsvHeader(Path csvPath) throws IOException {
-        String header = "手機號碼,客戶ID,客戶姓名,本次外撥目的,TTS1,變數1,變數2,變數3,TTS2,TTS3,TTS4,SMS1,SMS2,SMS3,SMS4,SMS5,SMSDefault";
+        String header = "客戶統編, 客戶姓名, EMAIL, EMAIL異動日期, EMAIL異動時間, AI重發確認信, 重發時間, 回覆結果";
 
         if (Files.exists(csvPath)) {
             Files.delete(csvPath);
@@ -357,51 +327,108 @@ public class GenAiCallingRptServ {
     }
 
     // =================================================================
-    // 【步驟 4b】查詢資料並寫入 CSV（JDBC 取代 sqlcmd）
+    // 【步驟 4b】查詢資料並寫入 EXCEL（JDBC 取代 sqlcmd）
     // =================================================================
-    private void exportCsvData(String dbIp, String dbPort, String dbName, String dbUser, String dbPass, String query, Path csvPath) throws Exception {
 
-        String url = String.format(
+private void exportData(
+        String dbIp,
+        String dbPort,
+        String dbName,
+        String dbUser,
+        String dbPass,
+        String query,
+        Path reportPath) throws Exception {
+
+    String url = String.format(
             "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
-            dbIp, dbPort, dbName);
+            dbIp,
+            dbPort,
+            dbName);
 
-        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+    try (Connection conn =
+            DriverManager.getConnection(
+                    url,
+                    dbUser,
+                    dbPass)) {
 
-            ResultSetMetaData meta = rs.getMetaData();
-            int colCount = meta.getColumnCount();
+        try (Statement stmt =
+                conn.createStatement()) {
 
-            try (BufferedWriter writer = Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8, StandardOpenOption.APPEND)) {
-                while (rs.next()) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 1; i <= colCount; i++) {
-                        if (i > 1) sb.append(",");
-                        String val = rs.getString(i);
-                        sb.append(val == null ? "" : val.trim());
-                    }
-                    writer.write(sb.toString());
-                    writer.newLine();
-                }
-            }
-        }
+            try (ResultSet rs =
+                    stmt.executeQuery(query)) {
 
-        log.info("建立外撥清單檔案 CSV data exported to: {}", csvPath);
-    }
+                exportExcel(rs, reportPath);
 
-    // =================================================================
-    // 【步驟 4c】清除多餘空白（Java 取代 sed 's/ *//g'）
-    // =================================================================
-    private void cleanWhitespace(Path sourcePath, Path targetPath) throws IOException {
-        List<String> lines = Files.readAllLines(sourcePath, StandardCharsets.UTF_8);
-        try (BufferedWriter writer = Files.newBufferedWriter(targetPath, StandardCharsets.UTF_8)) {
-            for (String line : lines) {
-                // 對應 sed 's/ *//g' → 刪除所有空白字元
-                writer.write(line.replace(" ", ""));
-                writer.newLine();
             }
         }
     }
+}
+
+
+
+
+private void exportExcel(
+        ResultSet rs,
+        Path reportPath) throws Exception {
+
+    try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+
+        XSSFSheet sheet =
+                workbook.createSheet("AI_REPORT");
+
+        int rowNum = 0;
+
+        Row titleRow =
+                sheet.createRow(rowNum++);
+
+        titleRow.createCell(0)
+                .setCellValue("AI外撥重發客戶EMAIL信箱確認信件結果");
+
+        rowNum++;
+
+        ResultSetMetaData meta =
+                rs.getMetaData();
+
+        int colCount =
+                meta.getColumnCount();
+
+        Row headerRow =
+                sheet.createRow(rowNum++);
+
+        for (int i = 1; i <= colCount; i++) {
+
+            headerRow.createCell(i - 1)
+                     .setCellValue(meta.getColumnLabel(i));
+        }
+
+        while (rs.next()) {
+
+            Row row =
+                    sheet.createRow(rowNum++);
+
+            for (int i = 1; i <= colCount; i++) {
+
+                String value =
+                        rs.getString(i);
+
+                row.createCell(i - 1)
+                   .setCellValue(
+                           value == null ? "" : value);
+            }
+        }
+
+        for (int i = 0; i < colCount; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        try (FileOutputStream out =
+                new FileOutputStream(reportPath.toFile())) {
+
+            workbook.write(out);
+        }
+    }
+}
+
 
     // =================================================================
     // 【步驟 5】透過 FTP 上傳報表（Apache Commons Net 取代 ftp shell）

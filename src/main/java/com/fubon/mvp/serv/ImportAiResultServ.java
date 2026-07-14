@@ -68,8 +68,8 @@ import org.springframework.stereotype.Service;
  *   </dependency>
  *
  * 【RSA 金鑰格式說明】
- *   支援 PKCS#8 (-----BEGIN PRIVATE KEY-----)
- *   支援 PKCS#1 (-----BEGIN RSA PRIVATE KEY-----) — 自動包裝轉換
+ *   支援 PKCS#8 (-----BEGIN PRIVATE-----)
+ *   支援 PKCS#1 (-----BEGIN RSA PRIVATE-----) — 自動包裝轉換
  *   若要手動轉換 PKCS#1 → PKCS#8：
  *     openssl pkcs8 -topk8 -nocrypt -in rsa.key -out rsa_pkcs8.key
  *
@@ -312,28 +312,28 @@ public class ImportAiResultServ {
     /**
      * 載入 PEM 格式 RSA 私鑰。
      * 自動偵測並支援：
-     *   PKCS#8  (-----BEGIN PRIVATE KEY-----)
-     *   PKCS#1  (-----BEGIN RSA PRIVATE KEY-----) → 自動包裝為 PKCS#8
+     *   PKCS#8  (-----BEGIN PRIVATE-----)
+     *   PKCS#1  (-----BEGIN RSA PRIVATE-----) → 自動包裝為 PKCS#8
      */
     private PrivateKey loadRsaPrivateKey(String keyPath) throws Exception {
         String pem = new String(Files.readAllBytes(Paths.get(keyPath)), StandardCharsets.UTF_8);
 
         // 去除 PEM 標頭/標尾與空白字元
         String base64 = pem
-            .replaceAll("-----BEGIN PRIVATE KEY-----",     "")
-            .replaceAll("-----END PRIVATE KEY-----",       "")
-            .replaceAll("-----BEGIN RSA PRIVATE KEY-----", "")
-            .replaceAll("-----END RSA PRIVATE KEY-----",   "")
+            .replaceAll("-----BEGIN PRIVATE-----",     "")
+            .replaceAll("-----END PRIVATE-----",       "")
+            .replaceAll("-----BEGIN RSA PRIVATE-----", "")
+            .replaceAll("-----END RSA PRIVATE-----",   "")
             .replaceAll("\\s+", "");
 
         byte[]     keyBytes = Base64.getDecoder().decode(base64);
         KeyFactory kf       = KeyFactory.getInstance("RSA");
 
         try {
-            // 嘗試 PKCS#8 格式 (-----BEGIN PRIVATE KEY-----)
+            // 嘗試 PKCS#8 格式 (-----BEGIN PRIVATE-----)
             return kf.generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
         } catch (InvalidKeySpecException e) {
-            // 嘗試 PKCS#1 格式 (-----BEGIN RSA PRIVATE KEY-----)，手動包裝成 PKCS#8
+            // 嘗試 PKCS#1 格式 (-----BEGIN RSA PRIVATE-----)，手動包裝成 PKCS#8
             log.debug("PKCS#8 載入失敗，嘗試以 PKCS#1 包裝處理");
             return kf.generatePrivate(new PKCS8EncodedKeySpec(wrapPkcs1ToPkcs8(keyBytes)));
         }

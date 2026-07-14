@@ -4,15 +4,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fubon.mvp.serv.GenAiCallingRptServ;
 import com.fubon.mvp.serv.ImportAiResultServ;
 import com.fubon.mvp.serv.ImportAiResultToProcessServ;
+import com.fubon.mvp.serv.AiEmailResultRptServ;
 import com.fubon.mvp.serv.Mvc084000Serv;
 import com.fubon.mvp.serv.Mvc110001Serv;
 import com.fubon.mvp.serv.Mvc110002Serv;
@@ -75,6 +78,9 @@ public class MvpApiCtrl {
 
 	@Autowired
 	private GenAiCallingRptServ genAiCallingRptServ;
+	
+	@Autowired
+	private AiEmailResultRptServ AiEmailResultRptServ;
 	
 	@Autowired
 	private Mvp110007Serv mvp110007Serv;
@@ -361,6 +367,34 @@ public class MvpApiCtrl {
 	        result.append("<message>ImportAiResult 排程觸發成功，已開始執行 AI 外撥結果報表導入</message>");
 	    } catch (Exception ex) {
 	        log.error("ImportAiResult 排程觸發失敗", ex);
+	        result.append("<status>error</status>");
+	        result.append("<message>").append(ex.getMessage()).append("</message>");
+	    }
+	    result.append("</response>");
+	    return result.toString();
+	}
+	
+	/**
+	 * 18. AI結果報表導入 (排程觸發) - AiEmailResultRptServ
+	 * 透過網址手動觸發 AI 外撥結果報表導入排程，執行 RSA 私鑰解密 → FTP 下載 Excel → 解析並更新資料庫
+	 * @return 處理結果訊息
+	 */
+	//http://localhost:8080/mvp/api/AiEmailResultRptServ
+	@RequestMapping(
+		    value = "/AiEmailResultRpt",
+		    method = {RequestMethod.GET, RequestMethod.POST},
+		    produces = MediaType.APPLICATION_XML_VALUE
+	)
+	public String AiEmailResultRptTrigger() {
+		log.info("AI結果報表導入 (手動觸發 via AiEmailResultRpt API)");
+	    StringBuilder result = new StringBuilder();
+	    result.append("<response>");
+	    try {
+	    	AiEmailResultRptServ.execute();
+	        result.append("<status>success</status>");
+	        result.append("<message>AiEmailResultRptServ 排程觸發成功，已開始執行 AI 外撥結果報表 </message>");
+	    } catch (Exception ex) {
+	        log.error("AiEmailResultRptServ 排程觸發失敗", ex);
 	        result.append("<status>error</status>");
 	        result.append("<message>").append(ex.getMessage()).append("</message>");
 	    }

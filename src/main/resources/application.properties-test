@@ -42,9 +42,9 @@ default.job.4=1
 default.job.5=1
 
 #產生外撥名單檔案 要上傳的FTP伺服器的IP
-GenAiCallingRptServ.FTP_IP=xxx.xxx.xxx.xxx
+GenAiCallingRptServ.FTP_IP=172.16.241.118
 #要下載AI外撥回饋檔案 的FTP伺服器的IP
-ImportAiResultServ.FTP_IP=xxx.xxx.xxx.xxx
+ImportAiResultServ.FTP_IP=172.16.241.118
 
 mvp.home.dir=/home/mvpadm
 mvp.report.dir=/home/mvpadm/reports
@@ -57,6 +57,7 @@ mvp.calllist_filename_prefix=CallList_
 
 #指定要建立的外撥檔案名稱 前綴字眼
 mvp.ai_calling_filename_prefix=AI_CALLING_
+mvp.ai_report_filename_prefix=AI_REPORT_
 
 #FTP連線檔案解密憑證碼
 mvp.decodeFtpCredential=b77a5c561934e089
@@ -65,11 +66,13 @@ mvp.decodeFtpCredential=b77a5c561934e089
 mvp.110007.cron.expression=0 30 0 * * ?
 mvp.110007.cron.zone=Asia/Taipei
 #六日未回覆AI外撥: (階段1) 資料前制處置 只限制每周星期一才執行
-mvp.110007.MUST_MONDAY=true
-#六日未回覆AI外撥: (階段2) 外撥檔案建立與上傳 (每日凌晨 1:00 觸發)
+mvp.110007.MUST_MONDAY=false
+#六日未回覆AI外撥: (階段2) 外撥檔案建立與上傳AI_CALLING (每日凌晨 1:00 觸發)
 mvp.110007.GenAiCallingRpt.expression=0 0 1 * * ?
-#六日未回覆AI外撥: (階段3) 外撥檔案下載與結果更新 (每日凌晨 2:00 觸發)
+#六日未回覆AI外撥: (階段3) 外撥檔案下載與結果更新CallList (每日凌晨 2:00 觸發)
 mvp.110007.ImportAiResult.expression=0 0 2 * * ?
+#六日未回覆AI外撥: (階段4) 外撥檔案建立與上傳AI_CALLING (每日凌晨 3:00 觸發)
+mvp.110007.AiEmailResultRpt.expression=0 0 3 * * ?
 
 #三日未回覆重發驗證信: 每天凌晨 00:40:00 執行一次
 mvp.110008.cron.expression=0 40 0 * * ?
