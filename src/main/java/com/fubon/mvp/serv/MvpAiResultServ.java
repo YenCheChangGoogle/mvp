@@ -3,7 +3,6 @@ package com.fubon.mvp.serv;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -13,6 +12,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +28,6 @@ import com.fubon.mvp.data.EmailDetail;
 import com.fubon.mvp.data.EmailImage;
 import com.fubon.mvp.data.EmailMaster;
 
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-
-import page2020.client.WebProxy;
 import page2020.core.Log;
 import page2020.util.TimeUtil;
 import reactor.core.publisher.Mono;
@@ -74,6 +71,7 @@ public class MvpAiResultServ {
 	private EmailHostDao hostDao;
 	@Autowired
 	private EmailImageDao imageDao;
+	@SuppressWarnings("unused")
 	@Autowired
 	private com.fubon.mvp.dao.EmailMasterRepo masterRepo;
 	@Autowired
@@ -120,6 +118,7 @@ public class MvpAiResultServ {
 			try {
 				// 1. 記錄舊狀態
 				String oldStatus = master.getStatus();
+				@SuppressWarnings("unused")
 				String oldTxStatus = master.getTxStatus();
 				String oldError = master.getErrorCode();
 				
@@ -507,6 +506,7 @@ public class MvpAiResultServ {
 		public String getTelephone() { return telephone; }
 		public void setTelephone(String telephone) { this.telephone = telephone; }
 		
+		@SuppressWarnings("unused")
 		public String getCustName() { return custName; }
 		public void setCustName(String custName) { this.custName = custName; }
 		

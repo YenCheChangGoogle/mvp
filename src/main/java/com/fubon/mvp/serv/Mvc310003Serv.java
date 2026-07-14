@@ -56,22 +56,18 @@ public class Mvc310003Serv {
 		
 		log.info("inbound: " + doc.asXML());
 		
-		// 1. 設定驗證變數。
-		boolean valid = false;
-		
-		// 2. 創建上行電文實體。
+		// 創建上行電文實體。
 		EmailMaster master = new EmailMaster(doc, "310003");
 		log.info(master.toString());
 
-		// 3. 檢查輸入格式。
+		// 檢查輸入格式。
 		if (master.invalid310003()) {
 			log.warn("check : (310003) argument errors 輸入參數沒通過驗證");
 			return this.response(doc, false, 0).asXML();
 		}
-		valid = true;
 		
 		EmailMaster entity=null;
-		// 4. 讀取資料庫 - 取得主檔資料 (CUST_ID, ID_TYPE)。
+		// 讀取資料庫 - 取得主檔資料 (CUST_ID, ID_TYPE)。
 		String queryUuid = master.getQueryUuid();
 		if(queryUuid!=null && queryUuid.length()>0) {
 			entity = this.dao.uuid(queryUuid);
@@ -100,11 +96,11 @@ public class Mvc310003Serv {
 			return this.response(doc, false, 1).asXML();
 		}
 		
-		// 5. 讀取明細清單 (t2)，並依 t1.ID, t2.CHG_DATE, t2.CHG_TIME 排序。
+		// 讀取明細清單 (t2)，並依 t1.ID, t2.CHG_DATE, t2.CHG_TIME 排序。
 		//List<EmailDetail> details = this.dao.details(queryUuid);
 		List<EmailDetail> details = this.dao.detailsByUuidOrderByResponeDateAscResponeTimeAsc(queryUuid);
 
-		// 6. 返回下行電文。
+		// 返回下行電文。
 		log.info("Mvc310003Serv : OK !");
 		return this.response(doc, true, entity, details).asXML();
 	}

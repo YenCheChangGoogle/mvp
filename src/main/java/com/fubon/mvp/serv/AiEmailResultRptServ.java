@@ -2,6 +2,7 @@ package com.fubon.mvp.serv;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -9,14 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -35,23 +31,18 @@ import java.util.Map;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.io.FileOutputStream;
-
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  * ============================================================================
@@ -590,7 +581,8 @@ private void exportExcel(
     // =================================================================
     // 【自訂例外】用於預期性跳過執行（非錯誤情況）
     // =================================================================
-    private static class SkipExecutionException extends Exception {
+    @SuppressWarnings("serial")
+	private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) {
             super(message);
         }

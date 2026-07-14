@@ -1,15 +1,30 @@
 package com.fubon.mvp.serv;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.security.*;
-import java.security.spec.*;
-import java.sql.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -502,7 +517,8 @@ public class ImportAiResultServ {
      *   - 檔案不存在（FTP 尚未上傳）
      * 對應 INFO 等級日誌，不觸發告警。
      */
-    private static class SkipExecutionException extends Exception {
+    @SuppressWarnings("serial")
+	private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) { super(message); }
     }
     

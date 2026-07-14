@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import org.dom4j.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +18,6 @@ import com.fubon.mvp.dao.EmailImageDao;
 import com.fubon.mvp.data.EmailDetail;
 import com.fubon.mvp.data.EmailImage;
 import com.fubon.mvp.data.EmailMaster;
-
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
 
 import page2020.core.Log;
 import page2020.util.EmptyUtil;

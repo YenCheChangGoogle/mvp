@@ -1,6 +1,5 @@
 package com.fubon.mvp.serv;
 
-import java.io.File;
 import java.util.Date;
 import java.util.List;
 
@@ -114,7 +113,7 @@ public class Mvc310005Serv {
 		} else {
 			// 查詢所有狀態為處理中(00)或已完成(01)且 FLAG 不為空之紀錄。
 			List<EmailMaster> list00 = this.dao.overdueResend(); // STATUS=00, TX_STATUS IN (11,13)
-			List<EmailMaster> list01 = new java.util.ArrayList<EmailMaster>();
+			//List<EmailMaster> list01 = new java.util.ArrayList<EmailMaster>();
 			
 			// 過濾 FLAG != NULL 的紀錄。
 			entities = new java.util.ArrayList<EmailMaster>();

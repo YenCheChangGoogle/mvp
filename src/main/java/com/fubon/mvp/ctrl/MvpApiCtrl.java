@@ -4,18 +4,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fubon.mvp.serv.AiEmailResultRptServ;
 import com.fubon.mvp.serv.GenAiCallingRptServ;
 import com.fubon.mvp.serv.ImportAiResultServ;
 import com.fubon.mvp.serv.ImportAiResultToProcessServ;
-import com.fubon.mvp.serv.AiEmailResultRptServ;
 import com.fubon.mvp.serv.Mvc084000Serv;
 import com.fubon.mvp.serv.Mvc110001Serv;
 import com.fubon.mvp.serv.Mvc110002Serv;
@@ -89,7 +87,7 @@ public class MvpApiCtrl {
 	private Mvp110008Serv mvp110008Serv;
 
 	/**
-	 * 1. MVC110001 - 前臺登錄。
+	 * MVC110001 - 前臺登錄。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -99,7 +97,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 2. MVC110002 - 取消申請。
+	 * MVC110002 - 取消申請。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -109,7 +107,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 2. MVC110003 - 前臺人工啟用。
+	 * MVC110003 - 前臺人工啟用。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -119,7 +117,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 3. MVC110006 - 信件狀態。
+	 * MVC110006 - 信件狀態。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -129,7 +127,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 4. MVC110007 - 客戶確認信件。
+	 * MVC110007 - 客戶確認信件。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -139,7 +137,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 5. MVC310001 - 前臺查詢。
+	 * MVC310001 - 前臺查詢。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -149,7 +147,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 6. MVC310002 - 整批查詢。
+	 * MVC310002 - 整批查詢。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -159,7 +157,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 7. MVC084000 - 下行存活驗證。
+	 * MVC084000 - 下行存活驗證。
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -169,7 +167,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 8. MVP110008 - 三日未回覆 重發驗證信
+	 * MVP110008 - 三日未回覆 重發驗證信
 	 * 
 	 * (1)
 	 * findOverdue3DaysAiCalling() 取得逾時清單 overdueList
@@ -206,7 +204,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 9. MVP110007 - 六日未回覆 AI外撥處理
+	 * MVP110007 - 六日未回覆 AI外撥處理
 	 * 
 	 */
 	//http://localhost:8080/mvp/api/mvp110007
@@ -225,7 +223,7 @@ public class MvpApiCtrl {
 	
 	
 	/**
-	 * 10. AI結果報表導入 - 解析 Excel 並更新 相關資資料
+	 * AI結果報表導入 - 解析 Excel 並更新 相關資資料
 	 * @param excelFilePath Excel 檔案完整路徑 (例如: /home/mvpadm/download/CallList_20260518.xlsx)
 	 * @return 處理結果訊息
 	 */
@@ -249,7 +247,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 11. MVC310003 - (查詢明細)
+	 * MVC310003 - (查詢明細)
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -267,7 +265,7 @@ public class MvpApiCtrl {
 	//}
 
 	/**
-	 * 12. MVC310004 - EMAILDTL明細查詢
+	 * MVC310004 - EMAILDTL明細查詢
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -278,7 +276,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 13. MVC310005 - AI外撥情形報表
+	 * MVC310005 - AI外撥情形報表
 	 * @param xml 上行電文
 	 * @return 下行電文
 	 */
@@ -289,37 +287,37 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 14. AI結果報表導入 (排程觸發)
+	 * AI結果報表導入 (排程觸發)
 	 * @return 處理結果訊息
 	 */
-	@RequestMapping(
-		    value = "/importairesult",
-		    method = {RequestMethod.GET, RequestMethod.POST},
-		    produces = MediaType.APPLICATION_XML_VALUE
-	)
-	public String importAiResult() {
-		log.info("AI結果報表導入 (手動觸發)");
-		importAiResultServ.execute();
-		return "<response><status>success</status><message>importAiResult trigger success</message></response>";
-	}
+	//@RequestMapping(
+	//	    value = "/importairesult",
+	//	    method = {RequestMethod.GET, RequestMethod.POST},
+	//	    produces = MediaType.APPLICATION_XML_VALUE
+	//)
+	//public String importAiResult() {
+	//	log.info("AI結果報表導入 (手動觸發)");
+	//	importAiResultServ.execute();
+	//	return "<response><status>success</status><message>importAiResult trigger success</message></response>";
+	//}
 
 	/**
-	 * 15. AI外撥名單導出 (排程觸發)
+	 * AI外撥名單導出 (排程觸發)
 	 * @return 處理結果訊息
 	 */
-	@RequestMapping(
-		    value = "/genaicallingrpt",
-		    method = {RequestMethod.GET, RequestMethod.POST},
-		    produces = MediaType.APPLICATION_XML_VALUE
-	)
-	public String genAiCallingRpt() {
-		log.info("AI外撥名單導出 (手動觸發)");
-		genAiCallingRptServ.execute();
-		return "<response><status>success</status><message>genAiCallingRpt trigger success</message></response>";
-	}
+	//@RequestMapping(
+	//	    value = "/genaicallingrpt",
+	//	    method = {RequestMethod.GET, RequestMethod.POST},
+	//	    produces = MediaType.APPLICATION_XML_VALUE
+	//)
+	//public String genAiCallingRpt() {
+	//	log.info("AI外撥名單導出 (手動觸發)");
+	//	genAiCallingRptServ.execute();
+	//	return "<response><status>success</status><message>genAiCallingRpt trigger success</message></response>";
+	//}
 
 	/**
-	 * 16. AI外撥名單導出 (排程觸發) - GenAiCallingRpt
+	 * AI外撥名單導出 (排程觸發) - GenAiCallingRpt
 	 * 透過網址手動觸發 AI 外撥名單導出排程，執行 RSA 私鑰解密 → SQL Server 查詢 → CSV 產生 → FTP 上傳
 	 * @return 處理結果訊息
 	 */
@@ -347,7 +345,7 @@ public class MvpApiCtrl {
 	}
 
 	/**
-	 * 17. AI結果報表導入 (排程觸發) - ImportAiResult
+	 * AI結果報表導入 (排程觸發) - ImportAiResult
 	 * 透過網址手動觸發 AI 外撥結果報表導入排程，執行 RSA 私鑰解密 → FTP 下載 Excel → 解析並更新資料庫
 	 * @return 處理結果訊息
 	 */
@@ -375,7 +373,7 @@ public class MvpApiCtrl {
 	}
 	
 	/**
-	 * 18. AI結果報表導入 (排程觸發) - AiEmailResultRptServ
+	 * AI結果報表導入 (排程觸發) - AiEmailResultRptServ
 	 * 透過網址手動觸發 AI 外撥結果報表導入排程，執行 RSA 私鑰解密 → FTP 下載 Excel → 解析並更新資料庫
 	 * @return 處理結果訊息
 	 */

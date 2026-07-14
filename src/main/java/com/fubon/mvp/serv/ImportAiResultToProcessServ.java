@@ -462,15 +462,19 @@ public class ImportAiResultToProcessServ {
 		public String getCustChoice() { return custChoice; }
 		public void setCustChoice(String custChoice) { this.custChoice = custChoice; }
 
+		@SuppressWarnings("unused")
 		public String getTelephone() { return telephone; }
 		public void setTelephone(String telephone) { this.telephone = telephone; }
 
+		@SuppressWarnings("unused")
 		public String getCustName() { return custName; }
 		public void setCustName(String custName) { this.custName = custName; }
 
+		@SuppressWarnings("unused")
 		public String getCallResult() { return callResult; }
 		public void setCallResult(String callResult) { this.callResult = callResult; }
 
+		@SuppressWarnings("unused")
 		public String getCallTime() { return callTime; }
 		public void setCallTime(String callTime) { this.callTime = callTime; }
 	}
