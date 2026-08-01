@@ -31,6 +31,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTP;
@@ -40,8 +41,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
  * ============================================================================
@@ -59,10 +67,25 @@ import org.springframework.stereotype.Service;
  *   5. 直接呼叫 ImportAiResultToProcessServ 解析 Excel 並更新資料庫
  *   6. 處理完成後，將檔案移至備份目錄
  *
+ * 【Fortify 修正紀錄】
+ *   1. J2EE Bad Practices: Direct Connection Management
+ *      原：querySqlServer() 內直接呼叫 DriverManager.getConnection(url, user, pass)
+ *      改：以 HikariCP (HikariDataSource) 建立集區化連線來源，取代直接使用 DriverManager。
+ *          因連線資訊為執行時期由 RSA 解密取得（動態，非固定設定），
+ *          無法採用靜態 JNDI/Spring DataSource Bean 的方式，
+ *          因此改由 runProcess() 在取得帳密後，建立「一個」共用的 HikariDataSource，
+ *          後續查詢皆透過這個共用連線池取得連線，流程結束後統一關閉，
+ *          不再由程式直接向 Driver 要求建立連線，也不會每次查詢都重建連線池。
+ *
+ *   2. J2EE Bad Practices: Threads
+ *      原：runProcess() 內以 Thread.sleep(10000) 手動控制等待後重試一次
+ *      改：改用 Spring Retry 的 RetryTemplate（SimpleRetryPolicy + FixedBackOffPolicy）
+ *          統一管理重試次數與等待邏輯，不再由應用程式自行呼叫 Thread.sleep()。
+ *
  * 【改寫重點 — 移除所有平台依賴，完全使用 Java 實現】
  *   原依賴         → Java 替代方案
  *   openssl      → javax.crypto.Cipher (RSA/ECB/PKCS1Padding)
- *   sqlcmd       → java.sql.DriverManager (MSSQL JDBC)
+ *   sqlcmd       → HikariCP (com.zaxxer.hikari.HikariDataSource)
  *   ftp 命令     → org.apache.commons.net.ftp.FTPClient
  *   decode.sh    → java.util.Base64
  *   /bin/sh      → 全部移除，無 shell 呼叫
@@ -80,6 +103,20 @@ import org.springframework.stereotype.Service;
  *     <groupId>commons-net</groupId>
  *     <artifactId>commons-net</artifactId>
  *     <version>3.10.0</version>
+ *   </dependency>
+ *
+ *   <!-- HikariCP 連線池（若專案為 Spring Boot，通常已內建，可省略此段） -->
+ *   <dependency>
+ *     <groupId>com.zaxxer</groupId>
+ *     <artifactId>HikariCP</artifactId>
+ *     <version>5.1.0</version>
+ *   </dependency>
+ *
+ *   <!-- Spring Retry -->
+ *   <dependency>
+ *     <groupId>org.springframework.retry</groupId>
+ *     <artifactId>spring-retry</artifactId>
+ *     <version>2.0.5</version>
  *   </dependency>
  *
  * 【RSA 金鑰格式說明】
@@ -124,29 +161,29 @@ public class ImportAiResultServ {
 
     @Value("${mvp.download.dir:/home/mvpadm/download}")
     private String DOWNLOAD_DIR;
-    
+
     //待討論 處理的報表的目錄與原本報表目錄目前設同一個
     @Value("${mvp.processed.dir:/home/mvpadm/reports}")
     private String PROCESSED_DIR;
-    
+
     @Value("${mvp.calllist_filename_prefix:CallList_}")
     private String CALLLIST_FILENAME_PREFIX;
-    
+
     @Value("${mvp.sh.dir:/home/mvpadm/sh}")
     private String SH_DIR;
-    
+
     @Value("${mvp.decodeFtpCredential:b77a5c561934e089}")
     private String DECODE_FTP_CREDENTIAL;
 
     // =================================================================
     // 【排程入口】每日凌晨 2:00 觸發
     // =================================================================
-   
+
     //@Scheduled(cron = "0 0 2 * * ?", zone = "Asia/Taipei")
-    
+
     //排程執行週期設
     @Scheduled(cron = "${mvp.110007.ImportAiResult.expression}", zone = "${mvp.110007.cron.zone}")
-    
+
     public void execute() {
         log.info("Starting AI Result Import process...");
         try {
@@ -163,6 +200,9 @@ public class ImportAiResultServ {
     // 【核心流程】
     // =================================================================
     private void runProcess() throws Exception {
+        // 整個流程共用同一個 HikariDataSource，流程結束後統一關閉
+        // （取代原本每次查詢都各自建立/銷毀連線池的做法）
+        HikariDataSource dataSource = null;
         try {
 
             // -----------------------------------------------------------------
@@ -193,20 +233,22 @@ public class ImportAiResultServ {
             String user     = sqlConf.get("user");
             String password = sqlConf.get("password");
 
+            // 用動態解密取得的帳密，建立「一個」共用的 HikariCP 連線池
+            // （取代直接呼叫 DriverManager.getConnection，也避免每次查詢都重建連線池）
+            dataSource = createDataSource(ip, port, database, user, password);
+
             // -----------------------------------------------------------------
             // 步驟 3：確認當前機器是否為 master 節點
             //   原：sqlcmd -S ... -Q "..."
-            //   現：java.sql.DriverManager (MSSQL JDBC)
+            //   現：透過共用的 HikariDataSource 取得連線並查詢
+            //
+            //   原本以 Thread.sleep(10000) 手動等待後重試一次，
+            //   已改用 Spring Retry 的 RetryTemplate 處理重試與等待邏輯，
+            //   不再由應用程式自行管理執行緒。
             // -----------------------------------------------------------------
             log.info("步驟3 確認 master 節點");
             String masterQuery = "SELECT host_name FROM emailhos WHERE main='1'";
-            String master = querySqlServer(ip, port, database, user, password, masterQuery).trim();
-
-            if (master.isEmpty()) {
-                log.info("查詢失敗，等待 10 秒後重試...");
-                Thread.sleep(10000);
-                master = querySqlServer(ip, port, database, user, password, masterQuery).trim();
-            }
+            String master = queryMasterWithRetry(dataSource, masterQuery);
 
             String runMachine = InetAddress.getLocalHost().getHostName();
             if (!master.equals(runMachine)) {
@@ -219,7 +261,7 @@ public class ImportAiResultServ {
             //   現：FTPClient (passive mode) + Base64.getDecoder()
             // -----------------------------------------------------------------
             log.info("步驟4 FTP 下載 {}", aiFilename);
-            
+
             File ftpIni = new File(SH_DIR, "ftp2.ini");
             if (!ftpIni.exists()) {
                 log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
@@ -235,7 +277,7 @@ public class ImportAiResultServ {
             for (String line : lines) {
                 if (line.trim().isEmpty()) continue;
                 String decoded = decodeFtpCredential(line.trim(), DECODE_FTP_CREDENTIAL);
-                
+
                 if (count == 0) {
                     ftpUser = decoded;
                 } else if (count == 1) {
@@ -259,17 +301,6 @@ public class ImportAiResultServ {
             if (!Files.exists(Paths.get(localFile))) {
                 throw new SkipExecutionException("要處置的檔案不存在：" + localFile);
             }
-            
-            /*
-            // 檢查檔案是否過期（12小時 = 43200秒）
-            long fileAgeSeconds = (System.currentTimeMillis() / 1000)
-                - Files.getLastModifiedTime(Paths.get(localFile)).to(java.util.concurrent.TimeUnit.SECONDS);
-            if (fileAgeSeconds > 43200) {
-                log.warn("檔案已過期（{} 秒前修改），跳過避免處理舊資料：{}", fileAgeSeconds, localFile);
-                throw new SkipExecutionException("File too old: " + localFile);
-            }
-            log.info("檔案時效確認：{} 秒前修改", fileAgeSeconds);
-            */
 
             // -----------------------------------------------------------------
             // 步驟 6：呼叫 Excel 處理服務（不變）
@@ -292,6 +323,11 @@ public class ImportAiResultServ {
             log.info("備份完成：{}", target);
 
         } finally {
+            // 關閉本次流程共用的連線池
+            if (dataSource != null) {
+                try { dataSource.close(); }
+                catch (Exception e) { log.warn("關閉 HikariDataSource 異常", e); }
+            }
             // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
             try { Files.deleteIfExists(Paths.get(HOME + "/mvpsqlserver.conf")); }
             catch (IOException e) { log.warn("刪除 mvpsqlserver.conf 異常", e); }
@@ -401,21 +437,88 @@ public class ImportAiResultServ {
     }
 
     // =================================================================
-    // 【步驟 3 實作】JDBC 查詢 SQL Server
+    // 【連線池】建立共用的 HikariDataSource（取代 DriverManager.getConnection）
+    //   因連線資訊為執行期動態取得（RSA 解密後才知道），無法使用 Spring Boot
+    //   啟動時自動配置的靜態 DataSource，改由 runProcess() 呼叫本方法建立
+    //   「一個」連線池，整個流程共用，結束後統一關閉。
     // =================================================================
+    private HikariDataSource createDataSource(String ip, String port, String db,
+                                               String user, String pass) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(String.format(JDBC_URL_TEMPLATE, ip, port, db));
+        config.setUsername(user);
+        config.setPassword(pass);
+        config.setMaximumPoolSize(2);
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(5000);
+        config.setPoolName("ImportAiResultServ-Pool");
+        return new HikariDataSource(config);
+    }
+
+    // =================================================================
+    // 【步驟 3 實作】JDBC 查詢 SQL Server（透過共用的 DataSource 取得連線）
+    // =================================================================
+
+    /**
+     * 包裝 querySqlServer() 的重試邏輯。
+     *
+     * 修正說明（J2EE Bad Practices: Threads）：
+     *   原本以 while + Thread.sleep(10000) 手動控制等待與重試，
+     *   容易發生無法預期的干擾、死結或競爭條件等問題。
+     *   改用 Spring Retry 的 RetryTemplate，將「重試次數」與「重試間隔」
+     *   統一交給標準函式庫管理，應用程式不再自行呼叫 Thread.sleep()
+     *   或自行建立/控制執行緒。
+     */
+    private String queryMasterWithRetry(DataSource dataSource, String sql) throws Exception {
+
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        // 重試間隔設定：固定等待 10 秒（對應原本的 Thread.sleep(10000)）
+        FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+        backOffPolicy.setBackOffPeriod(10000L);
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+
+        // 重試次數設定：最多執行 2 次（原邏輯為「查一次，失敗再查一次」）
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(2);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        RetryCallback<String, Exception> retryCallback = context -> {
+            String master = querySqlServer(dataSource, sql).trim();
+            if (master.isEmpty()) {
+                log.info("查詢 master 節點為空，準備重試...");
+                throw new MasterNodeQueryEmptyException("查詢 master 節點結果為空");
+            }
+            return master;
+        };
+
+        try {
+            return retryTemplate.execute(retryCallback);
+        } catch (MasterNodeQueryEmptyException e) {
+            // 重試用盡仍為空，維持原邏輯：以空字串代表查無 master
+            log.warn("重試 {} 次後仍查無 master 節點", 2);
+            return "";
+        }
+    }
 
     /**
      * 執行 SQL Server 查詢，回傳第一列第一欄的字串值。
      * 對應原指令：sqlcmd -S ip,port -d db -U user -P pass -Q "..."
      *
-     * @param sql 查詢 SQL（T-SQL，SELECT 回傳單一欄位即可）
+     * 修正說明（J2EE Bad Practices: Direct Connection Management）：
+     *   原本每次查詢皆直接呼叫 DriverManager.getConnection(url, user, pass) 取得連線，
+     *   應用程式自行管理連線的建立與釋放，容易出錯且無法受益於連線池。
+     *   現改為接收 runProcess() 建立好的共用 HikariDataSource，
+     *   僅透過 DataSource 取得/歸還連線，不再自行建立或關閉連線池，
+     *   也不再直接呼叫 DriverManager。
+     *
+     * @param dataSource 由 runProcess() 建立並共用的連線池
+     * @param sql        查詢 SQL（T-SQL，SELECT 回傳單一欄位即可）
      * @return 第一列第一欄的值；若無結果則回傳空字串
      */
-    private String querySqlServer(String ip, String port, String db,
-                                   String user, String pass, String sql) throws Exception {
+    private String querySqlServer(DataSource dataSource, String sql) throws Exception {
         log.info("JDBC 查詢：{}", sql);
-        String url = String.format(JDBC_URL_TEMPLATE, ip, port, db);
-        try (Connection conn = DriverManager.getConnection(url, user, pass);
+        try (Connection conn = dataSource.getConnection();
              Statement  stmt = conn.createStatement();
              ResultSet  rs   = stmt.executeQuery(sql)) {
             return rs.next() ? StringUtils.defaultString(rs.getString(1)) : "";
@@ -425,17 +528,6 @@ public class ImportAiResultServ {
     // =================================================================
     // 【步驟 4 實作】FTP 下載 + ftp.ini 解碼
     // =================================================================
-
-    /**
-     * 解碼 ftp.ini 中的帳號/密碼行。
-     * 對應原 decode.sh 的解碼邏輯（預設為 Base64 UTF-8）。
-     *
-     * @param encodedLine ftp.ini 中的一行原始文字
-     * @return 解碼後的明文字串
-     */
-    //private String decodeFtpCredential(String encodedLine) {
-    //    return new String(Base64.getDecoder().decode(encodedLine), StandardCharsets.UTF_8);
-    //}
 
     /**
      * 使用 Apache Commons Net FTPClient 以 Passive Mode 下載單一檔案。
@@ -508,7 +600,7 @@ public class ImportAiResultServ {
     }
 
     // =================================================================
-    // 【例外類別】預期性跳過（非錯誤情況）
+    // 【例外類別】
     // =================================================================
 
     /**
@@ -521,7 +613,14 @@ public class ImportAiResultServ {
 	private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) { super(message); }
     }
-    
+
+    /**
+     * 查詢 master 節點結果為空時拋出，供 RetryTemplate 判斷是否需要重試。
+     */
+    private static class MasterNodeQueryEmptyException extends Exception {
+        public MasterNodeQueryEmptyException(String message) { super(message); }
+    }
+
     /**
      * 解碼 FTP.ini 中的加密憑證（Base64 取代 decode.sh）
      */
@@ -551,12 +650,10 @@ public class ImportAiResultServ {
 
                     byte[] decrypted = cipher.doFinal(body);
                     String result = new String(decrypted, StandardCharsets.UTF_8).trim();
-                    //System.out.println("[decodeFtpCredential] 成功使用 digest=" + digest);
                     return result;
 
                 } catch (BadPaddingException | IllegalBlockSizeException e) {
                     //這個 digest 不對，換下一個試
-                    //System.out.println("[decodeFtpCredential] digest=" + digest + " 失敗，嘗試下一個");
                 }
             }
             throw new RuntimeException("所有 digest 均解密失敗，請確認密碼或加密方式");
@@ -586,5 +683,5 @@ public class ImportAiResultServ {
         }
         return keyAndIv;
     }
-    
+
 }
