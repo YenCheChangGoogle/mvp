@@ -47,16 +47,23 @@ public class EmailContent {
 		
 		// 1. 讀取文字檔。
 		StringBuilder sb1 = new StringBuilder();
+		BufferedReader reader = null;
 		try {
 			Resource resource = new ClassPathResource("paper/email");
 			File file = resource.getFile();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF-8"));
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file),"UTF-8"));
 			String line;
 			while ((line = reader.readLine()) != null) {
 				sb1.append(line);
 			}
-			reader.close();
 		} catch (Exception ex) {}
+		finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (Exception ex) {}
+			}
+		}
 
 		// 2. 保存在變數。
 		this.emailContent = sb1.toString();

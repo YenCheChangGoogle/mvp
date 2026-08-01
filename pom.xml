@@ -30,8 +30,8 @@
 		    升版後務必執行 `mvn dependency:tree -Dverbose` 確認實際生效版本，
 		    並完整跑過迴歸測試（Tomcat/Netty/Spring Security 中間有行為變更）。 
 		-->
-		<log4j2.version>2.24.3</log4j2.version>
-		<netty.version>4.1.135.Final</netty.version>
+		<log4j2.version>2.25.5</log4j2.version> <!-- 2.24.3 => 2.25.5-->
+		<netty.version>4.2.16.Final</netty.version> <!-- 4.1.135.Final => 4.1.136.Final => 4.2.16.Final-->
 		<tomcat.version>9.0.120</tomcat.version>
 		<bouncycastle.version>1.85</bouncycastle.version>
 		<snakeyaml.version>2.2</snakeyaml.version>
@@ -39,12 +39,12 @@
 		<commons-text.version>1.13.0</commons-text.version>
 		<commons-io.version>2.16.1</commons-io.version>
 		<commons-collections4.version>4.5.0</commons-collections4.version>
-		<httpcore5.version>5.3.1</httpcore5.version>
-		<jetty.version>9.4.57.v20241219</jetty.version>
+		<httpcore5.version>5.4.2</httpcore5.version> <!-- 5.3.1 => 5.4.2 -->
+		<jetty.version>12.0.33</jetty.version> <!-- 9.4.57.v20241219 => 12.0.33 -->
 		<poi.version>5.2.5</poi.version>
-		<mysql.version>8.0.33</mysql.version>
-		<jackson.version>2.17.2</jackson.version>
-		<spring-security.version>5.8.13</spring-security.version>
+		<mysql.version>9.2.0</mysql.version> <!-- 8.0.33 => 9.2.0 -->
+		<jackson.version>2.21.5</jackson.version> <!-- 2.17.2 => 2.18.8 => 2.21.5 -->
+		<spring-security.version>5.8.13</spring-security.version> <!-- 5.8.13 => 6.3.9 類別已經不同 無法升版 -->
 		<spring-data-bom.version>2021.2.18</spring-data-bom.version>
 		<xerces.version>2.12.2</xerces.version>
 		
