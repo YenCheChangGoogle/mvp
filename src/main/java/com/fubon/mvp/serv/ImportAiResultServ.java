@@ -468,8 +468,14 @@ public class ImportAiResultServ {
      *   改用 Spring Retry 的 RetryTemplate，將「重試次數」與「重試間隔」
      *   統一交給標準函式庫管理，應用程式不再自行呼叫 Thread.sleep()
      *   或自行建立/控制執行緒。
+     *
+     * 例外設計說明：
+     *   MasterNodeQueryEmptyException 改為 RuntimeException（unchecked），
+     *   因為它僅是內部用來觸發 RetryTemplate 重試的訊號，不是需要呼叫端
+     *   強制處理的業務例外，因此本方法不再宣告 throws Exception，
+     *   與 GenAiCallingRptServ 的寫法風格保持一致。
      */
-    private String queryMasterWithRetry(DataSource dataSource, String sql) throws Exception {
+    private String queryMasterWithRetry(DataSource dataSource, String sql) {
 
         RetryTemplate retryTemplate = new RetryTemplate();
 
@@ -483,8 +489,15 @@ public class ImportAiResultServ {
         retryPolicy.setMaxAttempts(2);
         retryTemplate.setRetryPolicy(retryPolicy);
 
-        RetryCallback<String, Exception> retryCallback = context -> {
-            String master = querySqlServer(dataSource, sql).trim();
+        RetryCallback<String, RuntimeException> retryCallback = context -> {
+            String master;
+            try {
+                master = querySqlServer(dataSource, sql).trim();
+            } catch (Exception e) {
+                // querySqlServer 內部可能拋出 SQLException 等 checked exception，
+                // 包裝為 RuntimeException 才能配合 RetryCallback<String, RuntimeException>
+                throw new RuntimeException("查詢 master 節點時發生錯誤", e);
+            }
             if (master.isEmpty()) {
                 log.info("查詢 master 節點為空，準備重試...");
                 throw new MasterNodeQueryEmptyException("查詢 master 節點結果為空");
@@ -616,8 +629,10 @@ public class ImportAiResultServ {
 
     /**
      * 查詢 master 節點結果為空時拋出，供 RetryTemplate 判斷是否需要重試。
+     * 改為 RuntimeException（unchecked），因為僅是內部觸發重試的訊號，
+     * 不需要呼叫端強制 catch 或宣告 throws。
      */
-    private static class MasterNodeQueryEmptyException extends Exception {
+    private static class MasterNodeQueryEmptyException extends RuntimeException {
         public MasterNodeQueryEmptyException(String message) { super(message); }
     }
 
