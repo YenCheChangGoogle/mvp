@@ -15,7 +15,6 @@ import java.security.Security;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -33,13 +32,20 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
  * ============================================================================
@@ -63,7 +69,7 @@ import org.springframework.stereotype.Service;
  *
  * 【依賴環境】
  *   - BouncyCastle JCE provider  → RSA 私鑰解密 mvpsqlserver.conf.enc
- *   - Microsoft JDBC Driver     → 查詢 SQL Server
+ *   - HikariCP                  → 動態建立連線池，取代 DriverManager 直接連線
  *   - Apache Commons Net FTP    → 上傳 CSV 至合作廠商 FTP 伺服器
  *   - ftp.ini                   → 存放編碼後的 FTP 帳號密碼（第1列=帳號, 第2列=密碼）
  *
@@ -91,6 +97,17 @@ import org.springframework.stereotype.Service;
  *   - SkipExecutionException : 非 master 節點 → 記錄 INFO 等級日誌
  *   - RuntimeException       : 指令執行失敗（RSA解密/JDBC/FTP）
  *                                → 記錄 ERROR 等級日誌，需介入處理
+ *
+ * 【連線管理說明】（因應 Fortify: J2EE Bad Practice - Direct Connection Management）
+ *   - 資料庫帳密為執行期動態解密取得，無法使用 Spring Boot 啟動時
+ *     自動配置的靜態 DataSource Bean。
+ *   - 改為在取得帳密後，用 HikariCP 手動建立一個 HikariDataSource
+ *     連線池，整個流程（queryMasterNode + exportCsvData）共用同一個
+ *     連線池，流程結束後統一關閉，取代直接呼叫 DriverManager.getConnection()。
+ *
+ * 【重試機制】（因應 Fortify: J2EE Bad Practice - Threads）
+ *   - queryMasterNode 查詢若查無結果，改用 Spring Retry 的 RetryTemplate
+ *     進行重試（最多 2 次，間隔 10 秒），取代原本手動 Thread.sleep(10000)。
  * ============================================================================
  */
 @Service
@@ -148,6 +165,7 @@ public class GenAiCallingRptServ {
     // =================================================================
     private void runProcess() throws Exception {
         Path decryptedConfPath = Paths.get(HOME, "mvpsqlserver.conf");
+        HikariDataSource dataSource = null;
         try {
             // -----------------------------------------------------------------
             // 步驟 1：日期設定
@@ -168,20 +186,17 @@ public class GenAiCallingRptServ {
             String user     = sqlConf.get("user");
             String password = sqlConf.get("password");
 
+            // 用動態解密取得的帳密，建立 HikariCP 連線池（取代 DriverManager）
+            // 整個流程（查 master + 導出報表）共用這個連線池
+            dataSource = createDataSource(ip, port, database, user, password);
+
             // -----------------------------------------------------------------
             // 步驟 3：確認當前機器是否為 master 節點（取代 sqlcmd）
             //   查詢 emailhos 資料表，找出 main='1' 的主機名稱
-            //   若首次查詢返回空值，等待 10 秒後重試一次
+            //   若查無結果，透過 RetryTemplate 重試（最多 2 次，間隔 10 秒）
             // -----------------------------------------------------------------
             String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
-            String master = queryMasterNode(ip, port, database, user, password, masterQuery);
-
-            // 若首次查詢返回空值，等待 10 秒後重試
-            if (master == null || master.isEmpty()) {
-                log.info("Master not found, sleeping 10s...");
-                Thread.sleep(10000);
-                master = queryMasterNode(ip, port, database, user, password, masterQuery);
-            }
+            String master = queryMasterNodeWithRetry(dataSource, masterQuery);
 
             // 取得當前機器的主機名稱並比較（原始用 getHostName，非 IP）
             String runMachine = InetAddress.getLocalHost().getHostName();
@@ -226,7 +241,7 @@ public class GenAiCallingRptServ {
                 "from EMAILMAS \n" +
                 "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '';";
 
-            exportCsvData(ip, port, database, user, password, dataQuery, reportPath);
+            exportCsvData(dataSource, dataQuery, reportPath);
 
             // 用 Java 清除 CSV 中的多餘空白 (對應 sed 's/ *//g')
             String cleanFile = reportFile + "_CLEAN";
@@ -245,6 +260,11 @@ public class GenAiCallingRptServ {
             processFtpUpload(reportFile);
 
         } finally {
+            // 關閉本次動態建立的連線池
+            if (dataSource != null) {
+                try { dataSource.close(); }
+                catch (Exception e) { log.warn("Failed to close HikariDataSource", e); }
+            }
             // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
             try { Files.deleteIfExists(decryptedConfPath); }
             catch (IOException e) { log.warn("Failed to delete mvpsqlserver.conf", e); }
@@ -317,15 +337,31 @@ public class GenAiCallingRptServ {
     }
 
     // =================================================================
-    // 【步驟 3】查詢 master 節點（JDBC 取代 sqlcmd）
+    // 【連線池】用 HikariCP 動態建立 DataSource（取代 DriverManager.getConnection）
+    //   因連線資訊為執行期動態取得（RSA 解密後才知道），無法使用 Spring Boot
+    //   啟動時自動配置的靜態 DataSource，改用 HikariCP 手動建立連線池，
+    //   交由容器認可的連線池元件管理連線生命週期。
     // =================================================================
-    private String queryMasterNode(String dbIp, String dbPort, String dbName,
-                                   String dbUser, String dbPass, String query) throws SQLException {
-        String url = String.format(
+    private HikariDataSource createDataSource(String dbIp, String dbPort, String dbName,
+                                               String dbUser, String dbPass) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(String.format(
             "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
-            dbIp, dbPort, dbName);
+            dbIp, dbPort, dbName));
+        config.setUsername(dbUser);
+        config.setPassword(dbPass);
+        config.setMaximumPoolSize(3);        // 排程任務，不需要大量連線
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(10000);  // 10 秒逾時
+        config.setPoolName("GenAiCallingRptPool");
+        return new HikariDataSource(config);
+    }
 
-        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
+    // =================================================================
+    // 【步驟 3】查詢 master 節點（改用共用的 DataSource 取得連線）
+    // =================================================================
+    private String queryMasterNode(DataSource dataSource, String query) throws SQLException {
+        try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
 
@@ -333,6 +369,42 @@ public class GenAiCallingRptServ {
                 return rs.getString(1).trim();
             }
             return "";
+        }
+    }
+
+    // =================================================================
+    // 【步驟 3-補充】使用 Spring Retry 重試 queryMasterNode
+    //   取代原本的 Thread.sleep(10000) 手動重試邏輯（J2EE Bad Practice: Threads）
+    //   規則：查無結果（null 或空字串）視為失敗，最多重試 2 次，每次間隔 10 秒
+    // =================================================================
+    private String queryMasterNodeWithRetry(DataSource dataSource, String query) throws SQLException {
+
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        // 重試策略：對 MasterNotFoundException 最多嘗試 2 次（第一次 + 一次重試）
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(2);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        // 退避策略：重試前固定等待 10 秒（由 Spring 管理，不再手動 Thread.sleep）
+        FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+        backOffPolicy.setBackOffPeriod(10000L);
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+
+        try {
+            return retryTemplate.execute(context -> {
+                String master = queryMasterNode(dataSource, query);
+                if (master == null || master.isEmpty()) {
+                    if (context.getRetryCount() == 0) {
+                        log.info("Master not found, will retry after 10s...");
+                    }
+                    throw new MasterNotFoundException("Master not found");
+                }
+                return master;
+            });
+        } catch (MasterNotFoundException e) {
+            log.info("Master still not found after retries.");
+            return null;
         }
     }
 
@@ -352,15 +424,11 @@ public class GenAiCallingRptServ {
     }
 
     // =================================================================
-    // 【步驟 4b】查詢資料並寫入 CSV（JDBC 取代 sqlcmd）
+    // 【步驟 4b】查詢資料並寫入 CSV（改用共用的 DataSource 取得連線）
     // =================================================================
-    private void exportCsvData(String dbIp, String dbPort, String dbName, String dbUser, String dbPass, String query, Path csvPath) throws Exception {
+    private void exportCsvData(DataSource dataSource, String query, Path csvPath) throws Exception {
 
-        String url = String.format(
-            "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
-            dbIp, dbPort, dbName);
-
-        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
+        try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
 
@@ -560,6 +628,15 @@ public class GenAiCallingRptServ {
     // =================================================================
     private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) {
+            super(message);
+        }
+    }
+
+    // =================================================================
+    // 【自訂例外】用於 RetryTemplate 判斷 master 查詢是否需要重試
+    // =================================================================
+    private static class MasterNotFoundException extends RuntimeException {
+        public MasterNotFoundException(String message) {
             super(message);
         }
     }
