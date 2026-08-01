@@ -1,0 +1,234 @@
+{
+  "info": {
+    "_postman_id": "c01b62d7-26dc-4d7b-b712-c3125400f337",
+    "name": "Fubon MVP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "635968"
+  },
+  "item": [
+    {
+      "name": "STEP1-110001",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/hello/110001",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "hello",
+            "110001"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "STEP2-getuuid",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/hello/getuuid",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "hello",
+            "getuuid"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "STEP3-310003",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>1101111</HSYDAY>\r\n\t\t<HSYTIME>122306</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HDTLEN>1059</HDTLEN>\r\n\t\t<HREQQ1/>\r\n\t\t<HREPQ1/>\r\n\t\t<HDRVQ1/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSYCVD>1101112</HSYCVD>\r\n\t\t<HTLID>2004115</HTLID>\r\n\t\t<HTXTID>MVC310003</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HSLGNF/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t\t<HRTNCD/>\r\n\t\t<HSBTRF/>\r\n\t\t<HFILL/>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>89014100</TELLER_NO>\r\n\t\t<TX_CODE>310003</TX_CODE>\r\n\t\t<CHNL>0Z</CHNL>\r\n\t\t<SUB_CHNL>19</SUB_CHNL>\r\n\t\t<CUST_ID>這裡填入用户身分字號</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>這裡填入用户名稱</CUST_NAME>\r\n\t\t<ENG_NAME>will</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID>這裡填入實際存在的UUID</QUERY_UUID>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310003",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310003"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "STEP3-310003 測試UUID 0Z89110001061715515200004",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>1101111</HSYDAY>\r\n\t\t<HSYTIME>122306</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HDTLEN>1059</HDTLEN>\r\n\t\t<HREQQ1/>\r\n\t\t<HREPQ1/>\r\n\t\t<HDRVQ1/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSYCVD>1101112</HSYCVD>\r\n\t\t<HTLID>2004115</HTLID>\r\n\t\t<HTXTID>MVC310003</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HSLGNF/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t\t<HRTNCD/>\r\n\t\t<HSBTRF/>\r\n\t\t<HFILL/>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>89014100</TELLER_NO>\r\n\t\t<TX_CODE>310003</TX_CODE>\r\n\t\t<CHNL>0Z</CHNL>\r\n\t\t<SUB_CHNL>19</SUB_CHNL>\r\n\t\t<CUST_ID>A155152002</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>東方不敗</CUST_NAME>\r\n\t\t<ENG_NAME>will</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID>0Z89110001061715515200004</QUERY_UUID>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310003",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310003"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "310004",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>260617</HSYDAY>\r\n\t\t<HSYTIME>103000</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HTXTID>MVC310004</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>89014100</TELLER_NO>\r\n\t\t<CUST_ID>這裡填入實際存在的用户身分字號</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>這裡填入實際存在的用户中文名稱</CUST_NAME>\r\n\t\t<ENG_NAME>這裡填入實際存在的用户英文名稱</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID>這裡填入實際存在的UUID</QUERY_UUID>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310004",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310004"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "310004 測試UUID 0010027aab9918100890028000000000",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>260617</HSYDAY>\r\n\t\t<HSYTIME>103000</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HTXTID>MVC310004</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>0088005400</TELLER_NO>\r\n\t\t<CUST_ID>F125688926</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>中文名稱</CUST_NAME>\r\n\t\t<ENG_NAME>英文名稱</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID>0010027aab9918100890028000000000</QUERY_UUID>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310004",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310004"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "310005",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>260617</HSYDAY>\r\n\t\t<HSYTIME>103000</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HTXTID>MVC310005</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>89014100</TELLER_NO>\r\n\t\t<CUST_ID>這裡填入實際存在的用户身分字號</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>這裡填入實際存在的用户中文名稱</CUST_NAME>\r\n\t\t<ENG_NAME>這裡填入實際存在的用户英文名稱</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID/>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310005",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310005"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "310005 測試UUID 0010027aab9918100890028000000000",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Tx>\r\n\t<TxHead>\r\n\t\t<HMSGID>P</HMSGID>\r\n\t\t<HERRID>0000</HERRID>\r\n\t\t<HSYDAY>260617</HSYDAY>\r\n\t\t<HSYTIME>103000</HSYTIME>\r\n\t\t<HWSID>ROE_Client</HWSID>\r\n\t\t<HSTANO>7898411</HSTANO>\r\n\t\t<HTXTID>MVC310005</HTXTID>\r\n\t\t<HFMTID>0001</HFMTID>\r\n\t\t<HRETRN/>\r\n\t\t<HPVDQ1/>\r\n\t\t<HPVDQ2/>\r\n\t\t<HSPSCK>Y8</HSPSCK>\r\n\t</TxHead>\r\n\t<TxBody>\r\n\t\t<UUID/>\r\n\t\t<BRANCH>00200</BRANCH>\r\n\t\t<TELLER_NO>89014100</TELLER_NO>\r\n\t\t<CUST_ID>F125688926</CUST_ID>\r\n\t\t<ID_TYPE>01</ID_TYPE>\r\n\t\t<CUST_NAME>中文名稱</CUST_NAME>\r\n\t\t<ENG_NAME>英文名稱</ENG_NAME>\r\n\t\t<PREV_EMAIL_ADDR/>\r\n\t\t<AFTER_EMAIL_ADDR/>\r\n\t\t<FROM_DATE/>\r\n\t\t<TO_DATE/>\r\n\t\t<REASON>01</REASON>\r\n\t\t<REMARK/>\r\n\t\t<ON_OFF_LINE>Y</ON_OFF_LINE>\r\n\t\t<QUERY_UUID/>\r\n\t\t<NEXT_KEY/>\r\n\t</TxBody>\r\n</Tx>",
+          "options": {
+            "raw": {
+              "language": "xml"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/mvp/api/310005",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "mvp",
+            "api",
+            "310005"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
