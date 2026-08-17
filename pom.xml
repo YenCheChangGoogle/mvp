@@ -42,7 +42,7 @@
 		<httpcore5.version>5.4.2</httpcore5.version> <!-- 5.3.1 => 5.4.2 -->
 		<jetty.version>12.0.33</jetty.version> <!-- 9.4.57.v20241219 => 12.0.33 -->
 		<poi.version>5.2.5</poi.version>
-		<mysql.version>9.2.0</mysql.version> <!-- 8.0.33 => 9.2.0 -->
+		<!-- <mysql.version>9.2.0</mysql.version> --> <!-- 8.0.33 => 9.2.0 -->
 		<jackson.version>2.21.5</jackson.version> <!-- 2.17.2 => 2.18.8 => 2.21.5 -->
 		<spring-security.version>5.8.13</spring-security.version> <!-- 5.8.13 => 6.3.9 類別已經不同 無法升版 -->
 		<spring-data-bom.version>2021.2.18</spring-data-bom.version>
@@ -200,11 +200,14 @@
 			</dependency>
 
 			<!-- MySQL 官方新 groupId，取代已停止維護的 mysql:mysql-connector-java -->
+			<!-- 
 			<dependency>
 				<groupId>com.mysql</groupId>
 				<artifactId>mysql-connector-j</artifactId>
 				<version>${mysql.version}</version>
 			</dependency>
+			-->
+			
 		</dependencies>
 	</dependencyManagement>
 
