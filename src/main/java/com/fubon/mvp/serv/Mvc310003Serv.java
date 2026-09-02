@@ -166,8 +166,8 @@ public class Mvc310003Serv {
 			Element repeat = body.addElement("TxRepeat");
 			
 			repeat.addElement("QUERY_UUID").setText(EmptyUtil.orEmpty(detail.getUuid()));
-			repeat.addElement("TX_DATE").setText(EmptyUtil.orEmpty(detail.getResponeDate()));
-			repeat.addElement("TX_TIME").setText(EmptyUtil.orEmpty(detail.getResponeTime()));
+			repeat.addElement("RESP_DATE").setText(EmptyUtil.orEmpty(detail.getResponeDate()));
+			repeat.addElement("RESP_TIME").setText(EmptyUtil.orEmpty(detail.getResponeTime()));
 			repeat.addElement("STATUS").setText(EmptyUtil.orEmpty(master.getStatus()));
 			repeat.addElement("TX_STATUS").setText(EmptyUtil.orEmpty(detail.getTxStatus()));
 

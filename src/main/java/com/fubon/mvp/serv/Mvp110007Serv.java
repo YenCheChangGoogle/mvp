@@ -39,11 +39,11 @@ import reactor.core.publisher.Mono;
  *      仿照 Mvp067000Serv 之開發模式。
  *
  * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
- * │ EMAILMAS.TX_STATUS 正常狀態機流程:      01(收到申請) → 10(寄信前) → 11(寄信後) → 13(寄信後) → 15(客戶確認) → 20(發送ESB前) → 21(發送核心) → 00(全部完成)　                                │
+ * │ EMAILMAS.TX_STATUS 正常狀態機流程:      01(收到申請) → 10(寄信前) → 11(寄信後) → 13(寄信後) → 15(客戶確認) → 20(發送ESB前) → 21(發送核心) → 00(全部完成)　                         │
  * ├───────────────────┬─────────────┬──────────────────┬─────────┬──────────┬────────────────────────────────────────────────────────────────────────────────────────────────────┤
- * │ EMAILMAS.STATUS   │ 00處理中     │ 01全部流程成功完成  │ 02失敗　 │ 99作廢　  │  　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　                  　          │
+ * │ EMAILMAS.STATUS   │ 00處理中 　　│ 01全部流程成功完成│ 02失敗　 │ 99作廢　 │  　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　                  　 │
  * ├───────────────────┼─────────────┼──────────────────┼─────────┼──────────┼─────────────┬──────────┬────────────┬───────────┬────────────┬──────────────┬────────────┬─────────┤
- * │ EMAILMAS.TX_STATUS│ 00全部完成  　│ 01收到申請　　     │ 10寄信前 │ 13寄信後  │ 15客戶確認　  │ 17AI外撥　│ 19外撥回饋 　│ 20發送ESB前│ 21發送核心 　│ 31發送回應前台 │ 15人工啟用 　│ 99作廢 　│
+ * │ EMAILMAS.TX_STATUS│ 00全部完成　 │ 01收到申請　　    │ 10寄信前 │ 13寄信後 │ 15客戶確認　 │ 17AI外撥　│ 19外撥回饋 │ 20發送ESB前│ 21發送核心 │ 31發送回應前台│ 15人工啟用 │ 99作廢 　│
  * └───────────────────┴─────────────┴──────────────────┴─────────┴──────────┴─────────────┴──────────┴────────────┴───────────┴────────────┴──────────────┴────────────┴─────────┘
  * 
  * 服務執行的狀態流：13 → 60 → 61 → 17（成功）或 → 02（失敗）
@@ -243,31 +243,43 @@ public class Mvp110007Serv {
 			if ("0000".equals(errId)) {
 				
 				String chName = this.proxy.value(response, "CH_NAME"); //取得姓名
-				String telNo = this.proxy.value(response, "TEL_NO"); //取得手機號碼。
+				String telNo = this.proxy.value(response, "TEL_NO"); //取得手機號碼
+				String missFlag =  this.proxy.value(response, "MISS_FLAG"); //MISS_FLAG
 				//String chName="測試";
 				//String telNo="1234567890";
 				
 				//FLAG維持不變 改成收到回饋檔案時候 客戶回覆是1才更新 FLAG=2
 				//master.setFlag("2");
-				
-				//無客戶姓名 或 外撥電話號碼 皆略過
-				if (chName != null && !chName.isEmpty() && telNo != null && !telNo.isEmpty()) {
-
-					master.setName(chName); // checker 欄位存放客戶姓名
-					master.setPhone(telNo); // telNo 欄位存放手機號碼
-					master.setStatus("00"); // "00": 處理中
-					master.setTxStatus("17"); // "17": AI外撥
-					master.setErrorCode("");
-					
-					message="準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
+				if(missFlag !=null && "001".equals(missFlag)) {
+				    //當此欄位回覆001則不索取姓名電話至資料庫
+				    log.info("6日未回覆 處理階段6 (呼叫電文中處理 MISS_FLAG=001) "+master.toString()+" 則不索取姓名電話至資料庫");
+				    master.setStatus("00"); //00 處理中
+				    master.setTxStatus("13"); //13 寄信後
+				    master.setErrorCode("");
+				    message=master.toString()+" (MISS_FLAG=001) 不索取姓名電話至資料庫";
 				}
 				else {
-					master.setStatus("00"); // "00": 處理中
+
+				    //無客戶姓名 或 外撥電話號碼 皆略過
+				    if (chName != null && !chName.isEmpty() && telNo != null && !telNo.isEmpty()) {
+
+					master.setName(chName); //checker 欄位存放客戶姓名
+					master.setPhone(telNo); //telNo 欄位存放手機號碼
+					master.setStatus("00"); //"00": 處理中
+					master.setTxStatus("17"); //"17": AI外撥
+					master.setErrorCode("");
+
+					message = "準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
+				    } else {
+					master.setStatus("00"); //"00": 處理中
 					master.setErrorCode("chName 或 telNo 無值");
-					
-					message="無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
+
+					message = "無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
+				    }
+				    
 				}
-				log.info("6日未回覆 處理階段6 (呼叫電文中處置) "+message);
+
+				log.info("6日未回覆 處理階段6 (呼叫電文中處置) " + message);
 			}
 			// 失敗
 			else {
