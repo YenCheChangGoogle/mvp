@@ -91,10 +91,10 @@ jasypt.encryptor.iv-generator-classname=org.jasypt.iv.NoIvGenerator
 mvp.dialect=org.hibernate.dialect.SQLServer2012Dialect
 mvp.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
 mvp.datasource.maxActive=100
-mvp.datasource.url=jdbc:sqlserver://172.17.236.88:3301;databaseName=TFB_MVP_DB
+mvp.datasource.url=jdbc:sqlserver://172.17.236.88:3301;databaseName=TFB_MVP_DB;encrypt=false;trustServerCertificate=true;
 mvp.datasource.username=ENC(EurSKBoOJqSbkqoCB+2RvA==)
 mvp.datasource.password=ENC(HD0G+dH+n1SVuZ3HZlHl/2QYzPZC0z+R)
-#test mvp.datasource.url=jdbc:sqlserver://172.17.241.167:3301;databaseName=TFB_MVP_DB
+#test mvp.datasource.url=jdbc:sqlserver://172.17.241.167:3301;databaseName=TFB_MVP_DB;encrypt=false;trustServerCertificate=true;
 #test mvp.datasource.username=ENC(w72Km99BalBnnTV/JOz90A==)
 #test mvp.datasource.password=ENC(mCIhPIszWrAZxO72sMnIYdECGhEAT3X1)
 
