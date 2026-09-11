@@ -4,6 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -226,7 +229,7 @@ public class GenAiCallingRptServ {
                 "from EMAILMAS \n" +
                 "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '';";
 
-            exportCsvData(ip, port, database, user, password, dataQuery, reportPath);
+            exportCsvData(ip, port, database, user, password, dataQuery, reportPath, true);
 
             // 用 Java 清除 CSV 中的多餘空白 (對應 sed 's/ *//g')
             String cleanFile = reportFile + "_CLEAN";
@@ -354,6 +357,7 @@ public class GenAiCallingRptServ {
     // =================================================================
     // 【步驟 4b】查詢資料並寫入 CSV（JDBC 取代 sqlcmd）
     // =================================================================
+    /*
     private void exportCsvData(String dbIp, String dbPort, String dbName, String dbUser, String dbPass, String query, Path csvPath) throws Exception {
 
         String url = String.format(
@@ -382,6 +386,35 @@ public class GenAiCallingRptServ {
         }
 
         log.info("建立外撥清單檔案 CSV data exported to: {}", csvPath);
+    }
+    */
+    private void exportCsvData(String dbIp, String dbPort, String dbName, String dbUser, String dbPass, String query, Path csvPath, boolean withBom) throws Exception {
+	String url = String.format("jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true", dbIp, dbPort, dbName);
+	try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
+	    ResultSetMetaData meta = rs.getMetaData();
+	    int colCount = meta.getColumnCount();
+	    //建立檔案，覆蓋舊內容
+	    try (OutputStream os = Files.newOutputStream(csvPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING); Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+		//如果需要 BOM，就在檔案開頭寫入 EF BB BF
+		if (withBom) {
+		    os.write(0xEF);
+		    os.write(0xBB);
+		    os.write(0xBF);
+		}
+		//開始寫 CSV 資料
+		while (rs.next()) {
+		    StringBuilder sb = new StringBuilder();
+		    for (int i = 1; i <= colCount; i++) {
+			if (i > 1) sb.append(",");
+			String val = rs.getString(i);
+			sb.append(val == null ? "" : val.trim());
+		    }
+		    writer.write(sb.toString());
+		    writer.write("\n");
+		}
+	    }
+	}
+	log.info("建立外撥清單檔案 CSV data exported to: {}", csvPath);
     }
 
     // =================================================================
