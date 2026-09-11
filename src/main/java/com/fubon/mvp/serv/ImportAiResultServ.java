@@ -1,6 +1,7 @@
 package com.fubon.mvp.serv;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,6 +20,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
@@ -36,12 +38,22 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.fubon.mvp.dao.EmailAiOutDao;
+import com.fubon.mvp.data.EmailAiOut;
 
 /**
  * ============================================================================
@@ -118,6 +130,9 @@ public class ImportAiResultServ {
 
     @Autowired
     private ImportAiResultToProcessServ importAiResultProcess;
+
+    @Autowired
+    private EmailAiOutDao aiOutDao;   // EMAILAIOUT 的 CRUD 操作(原始外撥結果備份)
 
     @Value("${mvp.home.dir:/home/mvpadm}")
     private String HOME;
@@ -280,6 +295,17 @@ public class ImportAiResultServ {
             } catch (Exception ex) {
                 log.error("解析下載檔案發生異常：{}", ex.getMessage(), ex);
                 throw new RuntimeException("Failed to process Excel", ex);
+            }
+
+            // -----------------------------------------------------------------
+            // 步驟 6.5：將 Excel 原始外撥結果整筆備份至 EMAILAIOUT
+            //   ★ best-effort：僅記錄 log，不拋出例外，不影響主流程(下載/搬檔/排程)
+            // -----------------------------------------------------------------
+            log.info("步驟6.5 備份原始外撥結果至 EMAILAIOUT：{}", localFile);
+            try {
+                importRawToEmailAiOut(localFile);
+            } catch (Exception ex) {
+                log.error("備份原始外撥結果至 EMAILAIOUT 發生異常：{}", ex.getMessage(), ex);
             }
 
             // -----------------------------------------------------------------
@@ -484,6 +510,199 @@ public class ImportAiResultServ {
                 try { ftp.disconnect(); } catch (IOException ignored) {}
             }
         }
+    }
+
+    // =================================================================
+    // 【步驟 6.5 實作】Excel 原始外撥結果 → 整筆備份至 EMAILAIOUT
+    // =================================================================
+
+    /**
+     * 解析 Excel 檔案，將每一列原始資料整筆存入 EMAILAIOUT，做為原始外撥結果的備份保存。
+     * 與 {@link ImportAiResultToProcessServ#processAiResultReport(String)} 的差異：
+     *   該方法僅解析 6 個關鍵欄位，用來驅動 EMAILMAS/EMAILDTL/EMAILIMG 的流程狀態機；
+     *   本方法則是「整列」原封不動存檔，純粹做為稽核/備查用途，兩者互不影響、互不依賴。
+     *
+     * 【欄位對應】(0-based，A~Y 共 25 欄，對應 CallList Excel 與 EMAILAIOUT 資料表全部欄位)
+     *   0=CHNL  1=ID  2=NAME  3=PURPOSE  4=PHONE  5=STATUS  6=RETRY  7=DATETIME(★主鍵)
+     *   8=INTENT  9=HANGUP  10=CHOICE  11=UUID
+     *   12=TTS1  13=VAR1  14=TTS2  15=VAR2  16=TTS3  17=VAR3  18=TTS4
+     *   19=SMS1  20=SMS2  21=SMS3  22=SMS4  23=SMS5  24=SMSDefault
+     *
+     * 【例外處理策略】
+     *   - 單列解析/存檔失敗（DATETIME 空值或格式錯誤、必填欄位缺漏、PK 重複等）
+     *     → 僅記錄 WARN 並跳過該列，不中斷整批匯入
+     *   - 整份檔案讀取失敗（檔案損毀、找不到檔案等）
+     *     → 記錄 ERROR，方法直接返回（呼叫端已將本方法包在 try-catch 中，屬 best-effort 備份）
+     *
+     * @param excelFilePath Excel 檔案完整路徑
+     */
+    private void importRawToEmailAiOut(String excelFilePath) {
+
+        int successCount = 0;
+        int skipCount = 0;
+
+        try (FileInputStream fis = new FileInputStream(excelFilePath);
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+
+                // 第一列是標題，直接略過
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+
+                try {
+                    EmailAiOut entity = new EmailAiOut();
+
+                    entity.setChannel(getRawCellString(row.getCell(0)));
+                    entity.setIdNo(getRawCellString(row.getCell(1)));
+                    entity.setName(getRawCellString(row.getCell(2)));
+                    entity.setPurpose(getRawCellString(row.getCell(3)));
+                    entity.setPhone(getRawCellString(row.getCell(4)));
+                    entity.setStatus(getRawCellString(row.getCell(5)));
+                    entity.setRetry(getRawCellString(row.getCell(6)));
+
+                    // ★ DATETIME 為主鍵，不可為空
+                    LocalDateTime dateTime = getRawCellDateTime(row.getCell(7));
+                    if (dateTime == null) {
+                        log.warn("EMAILAIOUT備份: 第{}列 DATETIME 欄位為空或無法解析，跳過此列", row.getRowNum() + 1);
+                        skipCount++;
+                        continue;
+                    }
+                    entity.setDateTime(dateTime);
+
+                    entity.setIntent(getRawCellString(row.getCell(8)));
+                    entity.setHangup(getRawCellString(row.getCell(9)));
+                    entity.setChoice(getRawCellString(row.getCell(10)));
+                    entity.setUuid(getRawCellString(row.getCell(11)));
+
+                    entity.setTts1(getRawCellString(row.getCell(12)));
+                    entity.setVar1(getRawCellString(row.getCell(13)));
+                    entity.setTts2(getRawCellString(row.getCell(14)));
+                    entity.setVar2(getRawCellString(row.getCell(15)));
+                    entity.setTts3(getRawCellString(row.getCell(16)));
+                    entity.setVar3(getRawCellString(row.getCell(17)));
+                    entity.setTts4(getRawCellString(row.getCell(18)));
+
+                    entity.setSms1(getRawCellString(row.getCell(19)));
+                    entity.setSms2(getRawCellString(row.getCell(20)));
+                    entity.setSms3(getRawCellString(row.getCell(21)));
+                    entity.setSms4(getRawCellString(row.getCell(22)));
+                    entity.setSms5(getRawCellString(row.getCell(23)));
+                    entity.setSmsDefault(getRawCellString(row.getCell(24)));
+
+                    // ★ 必填欄位（CHNL/ID/NAME/PURPOSE/PHONE）為空則跳過，避免違反 NOT NULL 約束
+                    if (isBlank(entity.getChannel()) || isBlank(entity.getIdNo())
+                            || isBlank(entity.getName()) || isBlank(entity.getPurpose())
+                            || isBlank(entity.getPhone())) {
+                        log.warn("EMAILAIOUT備份: 第{}列必填欄位(CHNL/ID/NAME/PURPOSE/PHONE)有缺漏，跳過此列", row.getRowNum() + 1);
+                        skipCount++;
+                        continue;
+                    }
+
+                    Exception saveEx = this.aiOutDao.save(entity);
+                    if (saveEx != null) {
+                        // 常見原因：DATETIME(PK) 重複（同一秒有多筆外撥結果）
+                        log.warn("EMAILAIOUT備份: 第{}列存檔失敗(可能是DATETIME主鍵重複): {}", row.getRowNum() + 1, saveEx.getMessage());
+                        skipCount++;
+                    } else {
+                        successCount++;
+                    }
+
+                } catch (Exception rowEx) {
+                    log.warn("EMAILAIOUT備份: 第{}列解析/存檔發生例外，跳過此列: {}", row.getRowNum() + 1, rowEx.toString());
+                    skipCount++;
+                }
+            }
+            // try-with-resources 會自動關閉 fis 與 workbook
+
+        } catch (Exception ex) {
+            log.error("EMAILAIOUT備份: 讀取Excel檔案失敗: {}", ex.toString(), ex);
+            return;
+        }
+
+        log.info("EMAILAIOUT備份完成: 成功={}, 跳過={}", successCount, skipCount);
+    }
+
+    /**
+     * 取得 Excel Cell 的字串值（支援 STRING/NUMERIC/BOOLEAN/FORMULA），null 安全。
+     */
+    private String getRawCellString(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                double numVal = cell.getNumericCellValue();
+                if (numVal == Math.floor(numVal)) {
+                    return String.valueOf((long) numVal);
+                } else {
+                    return String.valueOf(numVal);
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return String.valueOf(cell.getNumericCellValue());
+                } catch (IllegalStateException e) {
+                    return cell.getStringCellValue().trim();
+                }
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * 取得 Cell 的日期時間值，支援兩種來源：
+     *   1) Excel 原生日期格式 Cell（NUMERIC + isCellDateFormatted）→ 直接轉換
+     *   2) 純文字時間字串（如 "2026-09-11 12:00:00"、"20260911120000"）→ 嘗試多種格式解析
+     * 解析失敗回傳 null（呼叫端會跳過該列，因為 DATETIME 是 EMAILAIOUT 的主鍵，不可為空）。
+     */
+    private LocalDateTime getRawCellDateTime(Cell cell) {
+
+        if (cell == null) {
+            return null;
+        }
+
+        try {
+            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+                return cell.getLocalDateTimeCellValue();
+            }
+        } catch (Exception ex) {
+            // Excel原生日期解析失敗，繼續嘗試以文字格式解析
+        }
+
+        String text = getRawCellString(cell);
+        if (isBlank(text)) {
+            return null;
+        }
+        text = text.trim();
+
+        String[] patterns = {
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy/MM/dd HH:mm:ss",
+            "yyyyMMddHHmmss",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        };
+        for (String pattern : patterns) {
+            try {
+                return LocalDateTime.parse(text, DateTimeFormatter.ofPattern(pattern));
+            } catch (Exception ignore) {
+                // 換下一種格式繼續嘗試
+            }
+        }
+
+        log.warn("EMAILAIOUT備份: DATETIME欄位無法解析(已嘗試多種格式): {}", text);
+        return null;
+    }
+
+    /** 字串是否為空白（null 或 trim 後長度為 0） */
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 
     // =================================================================
