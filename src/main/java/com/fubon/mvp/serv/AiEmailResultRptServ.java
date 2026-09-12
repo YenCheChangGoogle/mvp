@@ -11,22 +11,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.security.Security;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -37,12 +30,16 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.fubon.mvp.dao.EmailHostDao;
 
 /**
  * ============================================================================
@@ -52,31 +49,33 @@ import org.springframework.stereotype.Service;
  * @category 服務類
  *
  * 【功能概述】
- * 完全模擬 gen_ai_calling_rpt.sh 的執行邏輯，移除平台依賴
- * 每日凌晨 1:40 自動觸發，執行以下流程：
- *   1. RSA 私鑰解密密碼檔，取得 SQL Server 連線資訊
- *   2. 查詢主節點，確認當前機器是否為 master（僅 master 執行）
- *   3. 從資料庫撈取
- *   4. 將資料寫入 EXCEL 報表，並清除多餘空白
- *   5. 透過 FTP 上傳至合作廠商 FTP 伺服器
- *   6. 清理解密的設定檔（避免明碼密碼殘留）
+ * 每日凌晨自動觸發，執行以下流程：
+ *   1. 透過 EmailHostDao.isMain() 確認當前機器是否為 master（僅 master 執行）
+ *   2. 透過 Spring 的 mvpJdbc(JdbcTemplate) 從資料庫撈取
+ *   3. 將資料寫入 EXCEL 報表
+ *   4. 透過 FTP 上傳至合作廠商 FTP 伺服器
+ *
+ * 【改版說明 2026/09】
+ *   原本這裡是逐行翻譯自 shell script（gen_ai_calling_rpt.sh）的做法：
+ *   自行用 RSA 私鑰解密 mvpsqlserver.conf.enc 取得帳密，再用 DriverManager
+ *   手動建立一條全新的 JDBC 連線，跟 Spring 既有的 mvpDataSource 連線池、
+ *   以及 application.properties 裡 Jasypt 加密的 mvp.datasource.* 完全脫鉤。
+ *   確認正式機 mvpsqlserver.conf.enc 解密出來的資料庫與 application.properties-prod
+ *   是同一套之後，已改為直接注入 Spring 既有元件：
+ *     - master 節點判斷 → EmailHostDao.isMain()
+ *     - 資料庫查詢       → mvpJdbc (JdbcTemplate，底層走 mvpDataSource 連線池)
+ *   RSA 解密、BouncyCastle、手動 JDBC 連線、明碼密碼暫存檔等相關程式碼已全數移除。
  *
  * 【執行排程】
  *   cron = "0 0 3 * * ?"  → 台灣時間每日凌晨 3:00
  *
  * 【依賴環境】
- *   - BouncyCastle JCE provider  → RSA 私鑰解密 mvpsqlserver.conf.enc
- *   - Microsoft JDBC Driver     → 查詢 SQL Server
  *   - Apache Commons Net FTP    → 上傳 EXCEL 至合作廠商 FTP 伺服器
  *   - ftp2.ini                   → 存放編碼後的 FTP 帳號密碼（第1列=帳號, 第2列=密碼）
  *
  * 【資料流程】
- *   EMAILMAS 資料庫 
- *     ↓ SQL 查詢 + JDBC 導出
- *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx
- *     ↓ 清除空白
- *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx_CLEAN
- *     ↓ rename 覆蓋原檔
+ *   EMAILMAS 資料庫 (透過 mvpJdbc)
+ *     ↓ SQL 查詢
  *   {REPORTS_DIR}/AI_REPORT_YYYYMMDD.xlsx
  *     ↓ FTP 上傳
  *   合作廠商 FTP /MVP/810SCOMM
@@ -91,7 +90,7 @@ import org.springframework.stereotype.Service;
  *
  * 【例外處理】
  *   - SkipExecutionException : 非 master 節點 → 記錄 INFO 等級日誌
- *   - RuntimeException       : 指令執行失敗（RSA解密/JDBC/FTP）
+ *   - RuntimeException       : 指令執行失敗（JDBC/FTP）
  *                                → 記錄 ERROR 等級日誌，需介入處理
  * ============================================================================
  */
@@ -99,19 +98,21 @@ import org.springframework.stereotype.Service;
 public class AiEmailResultRptServ {
     private static final Logger log = LoggerFactory.getLogger(AiEmailResultRptServ.class);
 
-    // BouncyCastle provider name
-    private static final String BC_PROVIDER = "BC";
+    //主機節點判斷（取代 RSA解密+DriverManager手動查詢master的方式）
+    @Autowired
+    private EmailHostDao hostDao;
 
-    // -----------------------------------------------------------------
-    // 外部設定（由 application.properties 注入）
+    //Spring 已配置好的 JdbcTemplate（底層走 mvpDataSource 連線池，取代手動 DriverManager 連線）
+    @Autowired
+    private JdbcTemplate mvpJdbc;
+
+    //-----------------------------------------------------------------
+    //外部設定（由 application.properties 注入）
     @Value("${GenAiCallingRptServ.FTP_IP}")
     private String FTP_IP;
 
-    // -----------------------------------------------------------------
-    // 環境路徑定義（對應 .sh 中的變數）
-    @Value("${mvp.home.dir:/home/mvpadm}")
-    private String HOME;
-
+    //-----------------------------------------------------------------
+    //環境路徑定義（對應 .sh 中的變數）
     @Value("${mvp.report.dir:/home/mvpadm/reports}")
     private String REPORTS_DIR;
 
@@ -124,9 +125,9 @@ public class AiEmailResultRptServ {
     @Value("${mvp.decodeFtpCredential:b77a5c561934e089}")
     private String DECODE_FTP_CREDENTIAL;
 
-    // =================================================================
-    // 【排程入口】每日凌晨 1:00 觸發
-    // =================================================================
+    //=================================================================
+    //【排程入口】每日凌晨 1:00 觸發
+    //=================================================================
     
     //@Scheduled(cron = "0 0 1 * * ?", zone = "Asia/Taipei")
 	
@@ -145,166 +146,73 @@ public class AiEmailResultRptServ {
         }
     }
     
-    // =================================================================
-    // 【核心流程】模擬 shell 腳本 gen_ai_calling_rpt.sh 的完整步驟
-    // =================================================================
+    //=================================================================
+    //【核心流程】模擬 shell 腳本 gen_ai_calling_rpt.sh 的完整步驟
+    //=================================================================
     private void runProcess() throws Exception {
-        Path decryptedConfPath = Paths.get(HOME, "mvpsqlserver.conf");
-        try {
-            // -----------------------------------------------------------------
-            // 步驟 1：日期設定
-            // -----------------------------------------------------------------
-            String rundate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            log.info("Run Date: {}", rundate);
+        //-----------------------------------------------------------------
+        //步驟 1：日期設定
+        //-----------------------------------------------------------------
+        String rundate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        log.info("Run Date: {}", rundate);
 
-            // -----------------------------------------------------------------
-            // 步驟 2：RSA 私鑰解密 SQL 連線設定檔（取代 openssl rsautl）
-            // -----------------------------------------------------------------
-            decryptWithRsaPrivateKey(decryptedConfPath);
-
-            // 讀取解密的設定檔
-            Map<String, String> sqlConf = readSqlConfig(decryptedConfPath.toString());
-            String ip       = sqlConf.get("ip");
-            String port     = sqlConf.get("port");
-            String database = sqlConf.get("database");
-            String user     = sqlConf.get("user");
-            String password = sqlConf.get("password");
-
-            // -----------------------------------------------------------------
-            // 步驟 3：確認當前機器是否為 master 節點（取代 sqlcmd）
-            //   查詢 emailhos 資料表，找出 main='1' 的主機名稱
-            //   若首次查詢返回空值，等待 10 秒後重試一次
-            // -----------------------------------------------------------------
-            String masterQuery = "set nocount on;select host_name from emailhos where main='1';";
-            String master = queryMasterNode(ip, port, database, user, password, masterQuery);
-
-            // 若首次查詢返回空值，等待 10 秒後重試
-            if (master == null || master.isEmpty()) {
-                log.info("Master not found, sleeping 10s...");
-                Thread.sleep(10000);
-                master = queryMasterNode(ip, port, database, user, password, masterQuery);
-            }
-
-            // 取得當前機器的主機名稱並比較（原始用 getHostName，非 IP）
-            String runMachine = InetAddress.getLocalHost().getHostName();
-            if (master == null || !master.equals(runMachine)) {
-                log.info("=== The Master Is {} ===\n=== Running Machine Is {} ===\nSkipping execution.", master, runMachine);
-                throw new SkipExecutionException("Not master node");
-            }
-            log.info("=== The Master Is {} ===\n=== Running Machine Is {} ===\nConfirmed Master, continuing...", master, runMachine);
-
-            // -----------------------------------------------------------------
-            // 步驟 4：產出 AI 外撥報表 CSV（取代 sqlcmd + sed）
-            //   a. 寫入 CSV 標頭（17 欄）
-            //   b. 執行 SQL 提取 FLAG='2' 且 PHONE 不為空的記錄
-            //   c. 將資料附加至 CSV 檔案
-            //   d. 清除多餘空白，再 mv 覆蓋原檔
-            // -----------------------------------------------------------------
-            String reportFile = AI_REPORT_FILENAME_PREFIX + rundate + ".xlsx";
-            Path reportPath = Paths.get(REPORTS_DIR, reportFile);
-            
-         // 寫入 CSV 標頭（17 欄位）
-            writeCsvHeader(reportPath);
-
-            // 執行 SQL 提取資料並附加至 CSV
-            String dataQuery = "set nocount on;\n" +
-                "select M.ID AS '客戶統編',\n" +
-                "       M.NAME AS '客戶姓名',\n" +
-                "       M.AFTER_EMAIL_ADDR AS 'EMAIL',\n" +
-                "       SUBSTRING(M.CHG_DATE,1,4) + '/' + " +
-                "       SUBSTRING(M.CHG_DATE,5,2) + '/' + " +
-                "       SUBSTRING(M.CHG_DATE,7,2) as 'EMAIL異動日期',\n" +
-                "       SUBSTRING(M.CHG_TIME,1,2) + ':' + " +
-                "       SUBSTRING(M.CHG_TIME,3,2) + ':' + " +
-                "       SUBSTRING(M.CHG_TIME,5,2) as 'EMAIL異動時間',\n" +
-                "       case when (M.STATUS is not null and M.STATUS <>'02') then '重發成功' else '重發失敗' end as 'AI重發確認信',\n" +
-                "       SUBSTRING(D.RESP_DATE,1,4) + '/' + \n" +
-                "       SUBSTRING(D.RESP_DATE,5,2) + '/' + \n" +
-                "       SUBSTRING(D.RESP_DATE,7,2) as '重發日期',\n" +
-                "       SUBSTRING(D.RESP_TIME,1,2) + ':' + " +
-                "       SUBSTRING(D.RESP_TIME,3,2) + ':' + " +
-                "       SUBSTRING(D.RESP_TIME,5,2) as '重發時間',\n" +
-                "       case when (M.STATUS='02') then '02:失敗' when (M.STATUS='01') then '01:完成成功'  else '00:處理中' end as '回覆結果'\n" +
-                "from EMAILMAS M left join EMAILDTL D on M.UUID=D.UUID \n" +
-                "where D.RESP_DATE > convert(varchar,DATEADD(day,-7,'20260706'),112) AND D.FLAG='2' AND D.TX_STATUS='11' order by M.CHG_DATE,M.CHG_TIME;";
-
-            exportData(ip, port, database, user, password, dataQuery, reportPath);
-
-            // -----------------------------------------------------------------
-            // 步驟 5：透過 FTP 上傳報表至合作廠商（取代 ftp shell）
-            // -----------------------------------------------------------------
-            processFtpUpload(reportFile);
-
-        } finally {
-            // 無論成功或失敗，一律清理解密設定檔（避免明碼密碼殘留）
-            try { Files.deleteIfExists(decryptedConfPath); }
-            catch (IOException e) { log.warn("Failed to delete mvpsqlserver.conf", e); }
+        //-----------------------------------------------------------------
+        //步驟 2：確認當前機器是否為 master 節點
+        //  原始作法：RSA解密取得連線資訊 → DriverManager查詢emailhos → 與本機hostname比對
+        //  現在作法：直接用 Spring 既有的 EmailHostDao.isMain()
+        //           （底層透過 mvpDataSource 連線池查詢 emailhos，且每 3 秒背景自動刷新）
+        //-----------------------------------------------------------------
+        if (!this.hostDao.isMain()) {
+            log.info("=== Running Machine Is Not Master ===\nSkipping execution.");
+            throw new SkipExecutionException("Not master node");
         }
+        log.info("=== Confirmed Master, continuing... ===");
+
+        //-----------------------------------------------------------------
+        //步驟 3：產出 AI 外撥報表 EXCEL（取代 sqlcmd + sed）
+        //  a. 寫入 CSV 標頭（17 欄）
+        //  b. 執行 SQL 提取 FLAG='2' 且 PHONE 不為空的記錄
+        //  c. 將資料附加至 EXCEL 檔案
+        //-----------------------------------------------------------------
+        String reportFile = AI_REPORT_FILENAME_PREFIX + rundate + ".xlsx";
+        Path reportPath = Paths.get(REPORTS_DIR, reportFile);
+
+        //寫入 CSV 標頭（17 欄位）
+        writeCsvHeader(reportPath);
+
+        //執行 SQL 提取資料並附加至 EXCEL
+        String dataQuery = "set nocount on;\n" +
+            "select M.ID AS '客戶統編',\n" +
+            "       M.NAME AS '客戶姓名',\n" +
+            "       M.AFTER_EMAIL_ADDR AS 'EMAIL',\n" +
+            "       SUBSTRING(M.CHG_DATE,1,4) + '/' + " +
+            "       SUBSTRING(M.CHG_DATE,5,2) + '/' + " +
+            "       SUBSTRING(M.CHG_DATE,7,2) as 'EMAIL異動日期',\n" +
+            "       SUBSTRING(M.CHG_TIME,1,2) + ':' + " +
+            "       SUBSTRING(M.CHG_TIME,3,2) + ':' + " +
+            "       SUBSTRING(M.CHG_TIME,5,2) as 'EMAIL異動時間',\n" +
+            "       case when (M.STATUS is not null and M.STATUS <>'02') then '重發成功' else '重發失敗' end as 'AI重發確認信',\n" +
+            "       SUBSTRING(D.RESP_DATE,1,4) + '/' + \n" +
+            "       SUBSTRING(D.RESP_DATE,5,2) + '/' + \n" +
+            "       SUBSTRING(D.RESP_DATE,7,2) as '重發日期',\n" +
+            "       SUBSTRING(D.RESP_TIME,1,2) + ':' + " +
+            "       SUBSTRING(D.RESP_TIME,3,2) + ':' + " +
+            "       SUBSTRING(D.RESP_TIME,5,2) as '重發時間',\n" +
+            "       case when (M.STATUS='02') then '02:失敗' when (M.STATUS='01') then '01:完成成功'  else '00:處理中' end as '回覆結果'\n" +
+            "from EMAILMAS M left join EMAILDTL D on M.UUID=D.UUID \n" +
+            "where D.RESP_DATE > convert(varchar,DATEADD(day,-7,'20260706'),112) AND D.FLAG='2' AND D.TX_STATUS='11' order by M.CHG_DATE,M.CHG_TIME;";
+
+        exportData(dataQuery, reportPath);
+
+        //-----------------------------------------------------------------
+        //步驟 4：透過 FTP 上傳報表至合作廠商（取代 ftp shell）
+        //-----------------------------------------------------------------
+        processFtpUpload(reportFile);
     }
 
-    // =================================================================
-    // 【步驟 2】RSA 私鑰解密（取代 openssl rsautl -decrypt）
-    // =================================================================
-    private void decryptWithRsaPrivateKey(Path outputConfPath) throws Exception {
-        if (Security.getProvider(BC_PROVIDER) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
-
-        // 讀取 RSA 私鑰檔案
-        Path rsaKeyPath = Paths.get(HOME, "rsa.key");
-        byte[] keyBytes = Files.readAllBytes(rsaKeyPath);
-        String keyPem = new String(keyBytes, StandardCharsets.UTF_8);
-
-        // 去除 PEM 標頭/尾
-        String base64Key = keyPem
-            .replace("-----BEGIN RSA PRIVATE-----", "")
-            .replace("-----BEGIN PRIVATE-----", "")
-            .replace("-----END RSA PRIVATE-----", "")
-            .replace("-----END PRIVATE-----", "")
-            .replaceAll("\\s+", "");
-
-        byte[] derKey = java.util.Base64.getDecoder().decode(base64Key);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(derKey);
-        java.security.KeyFactory kf = java.security.KeyFactory.getInstance("RSA");
-        RSAPrivateKey privateKey = (RSAPrivateKey) kf.generatePrivate(keySpec);
-
-        // RSA 私鑰解密（對應 openssl rsautl -decrypt）
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", BC_PROVIDER);
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-        // 讀取加密檔並解密
-        Path encPath = Paths.get(HOME, "mvpsqlserver.conf.enc");
-        byte[] encryptedBytes = Files.readAllBytes(encPath);
-        
-        byte[] decrypted = cipher.doFinal(encryptedBytes);
-        Files.write(outputConfPath, decrypted, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-                   
-                log.info("Decrypted mvpsqlserver.conf successfully.");
-    }
-
-    // =================================================================
-    // 【步驟 3】查詢 master 節點（JDBC 取代 sqlcmd）
-    // =================================================================
-    private String queryMasterNode(String dbIp, String dbPort, String dbName,
-                                   String dbUser, String dbPass, String query) throws SQLException {
-        String url = String.format(
-            "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
-            dbIp, dbPort, dbName);
-
-        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            if (rs.next()) {
-                return rs.getString(1).trim();
-            }
-            return "";
-        }
-    }
-    
-    // =================================================================
-    // 【步驟 4a】寫入 EXCEL 標頭
-    // =================================================================
+    //=================================================================
+    //【步驟 4a】寫入 EXCEL 標頭
+    //=================================================================
     private void writeCsvHeader(Path csvPath) throws IOException {
         String header = "客戶統編, 客戶姓名, EMAIL, EMAIL異動日期, EMAIL異動時間, AI重發確認信, 重發時間, 回覆結果";
 
@@ -317,43 +225,30 @@ public class AiEmailResultRptServ {
         }
     }
 
-    // =================================================================
-    // 【步驟 4b】查詢資料並寫入 EXCEL（JDBC 取代 sqlcmd）
-    // =================================================================
+    //=================================================================
+    //【步驟 4b】查詢資料並寫入 EXCEL
+    //  原本：DriverManager 自建連線 → Statement → ResultSet
+    //  現在：透過 Spring 的 mvpJdbc(JdbcTemplate) 向 mvpDataSource 連線池
+    //        借用一條連線(用完自動歸還)，維持原本 exportExcel(ResultSet,...) 邏輯不變
+    //=================================================================
 
-private void exportData(
-        String dbIp,
-        String dbPort,
-        String dbName,
-        String dbUser,
-        String dbPass,
-        String query,
-        Path reportPath) throws Exception {
+private void exportData(String query, Path reportPath) throws Exception {
 
-    String url = String.format(
-            "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=false;trustServerCertificate=true",
-            dbIp,
-            dbPort,
-            dbName);
+    this.mvpJdbc.execute((ConnectionCallback<Void>) conn -> {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
 
-    try (Connection conn =
-            DriverManager.getConnection(
-                    url,
-                    dbUser,
-                    dbPass)) {
+            exportExcel(rs, reportPath);
+            return null;
 
-        try (Statement stmt =
-                conn.createStatement()) {
-
-            try (ResultSet rs =
-                    stmt.executeQuery(query)) {
-
-                exportExcel(rs, reportPath);
-
-            }
+        } catch (Exception ex) {
+            //ConnectionCallback 不允許拋出受檢例外，包裝成 RuntimeException
+            //呼叫端(runProcess)的 throws Exception 仍會正常往外傳遞
+            throw new RuntimeException(ex);
         }
-    }
+    });
 }
+
 
 
 
@@ -421,9 +316,9 @@ private void exportExcel(
 }
 
 
-    // =================================================================
-    // 【步驟 5】透過 FTP 上傳報表（Apache Commons Net 取代 ftp shell）
-    // =================================================================
+    //=================================================================
+    //【步驟 5】透過 FTP 上傳報表（Apache Commons Net 取代 ftp shell）
+    //=================================================================
     private void processFtpUpload(String reportFile) throws Exception {
     	log.info("透過 FTP 上傳報表");
     	
@@ -437,7 +332,7 @@ private void exportExcel(
         String ftpUser = "";
         String ftpPass = "";
 
-        // 解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
+        //解碼 ftp.ini 中的帳號（第1列）與密碼（第2列）
         int count = 0;
         for (String line : lines) {
             if (line.trim().isEmpty()) continue;
@@ -563,24 +458,9 @@ private void exportExcel(
         }
     }
 
-    // =================================================================
-    // 【工具方法】讀取 SQL 設定檔，轉為 key-value 配對
-    // =================================================================
-    private Map<String, String> readSqlConfig(String path) throws IOException {
-        Map<String, String> conf = new HashMap<>();
-        List<String> lines = Files.readAllLines(Paths.get(path));
-        for (String line : lines) {
-            if (line.contains("=")) {
-                String[] parts = line.split("=", 2);
-                conf.put(parts[0].trim(), parts[1].trim());
-            }
-        }
-        return conf;
-    }
-
-    // =================================================================
-    // 【自訂例外】用於預期性跳過執行（非錯誤情況）
-    // =================================================================
+    //=================================================================
+    //【自訂例外】用於預期性跳過執行（非錯誤情況）
+    //=================================================================
     @SuppressWarnings("serial")
 	private static class SkipExecutionException extends Exception {
         public SkipExecutionException(String message) {
