@@ -272,7 +272,7 @@ public class Mvp110007Serv {
 					message = "準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
 				    } else {
 					master.setStatus("00"); //"00": 處理中
-					master.setErrorCode("chName 或 telNo 無值");
+					master.setErrorCode("NODATA"); //ERR_CODE欄位長度限制為6字元,詳細說明僅記錄於log
 
 					message = "無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
 				    }
@@ -284,7 +284,8 @@ public class Mvp110007Serv {
 			// 失敗
 			else {
 				master.setStatus("00");
-				master.setErrorCode(this.proxy.value(response, "EMSGID"));
+				String emsgId = this.proxy.value(response, "EMSGID");
+				master.setErrorCode(emsgId != null && emsgId.length() > 6 ? emsgId.substring(0, 6) : emsgId); //防止超過ERR_CODE欄位長度限制(6字元)造成截斷例外
 				message="呼叫電文 67050 異常 " + master.toString() + ", errId=" + errId +" errorMsg=" + this.proxy.value(response, "EMSGTXT");
 				
 				log.error("6日未回覆 處理階段6 (呼叫電文中處置異常) "+message);
