@@ -269,10 +269,10 @@ public class GenAiCallingRptServ {
 
         // 去除 PEM 標頭/尾
         String base64Key = keyPem
-            .replace("-----BEGIN RSA PRIVATE-----", "")
-            .replace("-----BEGIN PRIVATE-----", "")
-            .replace("-----END RSA PRIVATE-----", "")
-            .replace("-----END PRIVATE-----", "")
+            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+            .replace("-----BEGIN PRIVATE KEY-----", "")
+            .replace("-----END RSA PRIVATE KEY-----", "")
+            .replace("-----END PRIVATE KEY-----", "")
             .replaceAll("\\s+", "");
 
         byte[] derKey = java.util.Base64.getDecoder().decode(base64Key);
