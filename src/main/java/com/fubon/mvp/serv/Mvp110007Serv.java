@@ -213,7 +213,7 @@ public class Mvp110007Serv {
 				if (! ("02".equals(oldStatus) && this.notEsbCode.equals(oldError))) {
 					master.setStatus("02");
 					master.setTxStatus("80");
-					master.setErrorCode(this.notEsbCode);
+					master.setErrorCode(this.notEsbCode); 
 					this.dao.save(master);
 					this.dao.save(new EmailDetail(master));
 					
@@ -259,10 +259,17 @@ public class Mvp110007Serv {
 				    message=master.toString()+" (MISS_FLAG=001) 不索取姓名電話至資料庫";
 				}
 				else {
-
-				    //無客戶姓名 或 外撥電話號碼 皆略過
-				    if (chName != null && !chName.isEmpty() && telNo != null && !telNo.isEmpty()) {
-
+				    
+				    //如果有取到客戶姓名 一定要儲存
+				    if (chName != null && !chName.isEmpty()) {
+					master.setName(chName); //checker 欄位存放客戶姓名
+				    }
+				    else {
+					master.setName("");
+				    }
+				    
+				    //如果有取到外撥電話號碼 一定要儲存
+				    if(telNo != null && !telNo.isEmpty()) {
 					master.setName(chName); //checker 欄位存放客戶姓名
 					master.setPhone(telNo); //telNo 欄位存放手機號碼
 					master.setStatus("00"); //"00": 處理中
@@ -270,12 +277,44 @@ public class Mvp110007Serv {
 					master.setErrorCode("");
 
 					message = "準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
-				    } else {
-					master.setStatus("00"); //"00": 處理中
-					master.setErrorCode("NODATA"); //ERR_CODE欄位長度限制為6字元,詳細說明僅記錄於log
-
-					message = "無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
 				    }
+				    //沒有取到外撥電話號碼
+				    else {
+					
+					//注意: EMAILMAS.TX_STATUS值是 00全部完成  01收到申請  10寄信前  13寄信後  15客戶確認  17AI外撥  19外撥回饋  20發送ESB前  21發送核心  31發送回應前台  15人工啟用  99作廢
+					
+					//規格調整
+					//(1)請調整EMAILMAS STATUS=00、TX_STATUS=13、ERR_CODE=空 (這樣下禮拜才有辦法再抓)
+					//(2)以及EMAILDTL的TX_STATUS=81、ERR_CODE應為=E111，再多一新增一筆STATUS=00、TX_STATUS=13
+					
+					//(1)
+					master.setTxStatus("81");
+					master.setStatus("00");
+					master.setErrorCode("E111"); //E111 查無手機號碼
+					this.dao.save(master); //儲存主檔
+					this.dao.save(new EmailDetail(master)); //儲存紀錄
+					
+					//(2)
+					master.setTxStatus("13");
+					master.setStatus("00");
+					master.setErrorCode("");
+					message="沒有手機號碼 "+master.toString()+" 調整 EMAILMAS STATUS=00、TX_STATUS=13、ERR_CODE=空 讓下禮拜才有辦法再執行一次";
+				    }
+				    
+				    //無客戶姓名 或 外撥電話號碼 皆略過
+				    //if (chName != null && !chName.isEmpty() && telNo != null && !telNo.isEmpty()) {
+				    //	master.setName(chName); //checker 欄位存放客戶姓名
+				    //	master.setPhone(telNo); //telNo 欄位存放手機號碼
+				    //	master.setStatus("00"); //"00": 處理中
+				    //	master.setTxStatus("17"); //"17": AI外撥
+				    //	master.setErrorCode("");
+				    //	message = "準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
+				    //}
+				    //else {
+				    //	master.setStatus("00"); //"00": 處理中
+				    //	master.setErrorCode("NODATA"); //ERR_CODE欄位長度限制為6字元,詳細說明僅記錄於log
+				    //	message = "無法準備AI外撥名單資料: " + master.toString() + ", chName 或 telNo 無值";
+				    //}
 				    
 				}
 
@@ -283,6 +322,13 @@ public class Mvp110007Serv {
 			}
 			// 失敗
 			else {
+			        if(master.getName() ==null){
+			           master.setName("");
+			        }
+			        if(master.getPhone() ==null) {
+			            master.setPhone("");
+			        }
+			        
 				master.setStatus("00");
 				String emsgId = this.proxy.value(response, "EMSGID");
 				master.setErrorCode(emsgId != null && emsgId.length() > 6 ? emsgId.substring(0, 6) : emsgId); //防止超過ERR_CODE欄位長度限制(6字元)造成截斷例外

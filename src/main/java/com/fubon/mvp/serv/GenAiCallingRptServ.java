@@ -207,13 +207,18 @@ public class GenAiCallingRptServ {
             // 寫入 CSV 標頭（17 欄位）
             writeCsvHeader(reportPath);
 
-            // 執行 SQL 提取資料並附加至 CSV
+            //TODO 執行 SQL 提取資料並附加至 CSV
             String dataQuery = "set nocount on;\n" +
                 "select RTRIM(PHONE) as [手機號碼],\n" +
                 "       RTRIM(ID) as [客戶ID],\n" +
                 "       RTRIM(NAME) as [客戶姓名],\n" +
-                "       '有關您變更留存於本行的電子郵件信箱之相關訊息要通知您' as [本次外撥目的],\n" +
-                "       '您好，由於您申請變更您留存於本行的電子郵件信箱，但您尚未回覆確認您的電子郵件信箱，故本行目前尚未啟用您的電子郵件信箱，提醒您儘速完成電子郵件信箱確認回覆。' as TTS1,\n" +
+                
+                //"       '有關您變更留存於本行的電子郵件信箱之相關訊息要通知您' as [本次外撥目的],\n" +
+                //"       '您好，由於您申請變更您留存於本行的電子郵件信箱，但您尚未回覆確認您的電子郵件信箱，故本行目前尚未啟用您的電子郵件信箱，提醒您儘速完成電子郵件信箱確認回覆。' as TTS1,\n" +
+                
+                "      '有關您變更留存的email信箱相關訊息要通知您' as [本次外撥目的],\n"+
+                "      '您申請變更email信箱的需求，因尚未完成信箱驗證，所以變更程序暫時無法生效。請您儘速確認並回覆驗證郵件，完成啟用程序。' as TTS1,\n" +
+                
                 "       'NA' as [變數1],\n" +
                 "       'NA' as [變數2],\n" +
                 "       'NA' as [變數3],\n" +
@@ -227,7 +232,8 @@ public class GenAiCallingRptServ {
                 "       'NA' as SMS5,\n" +
                 "       'NA' as SMSDefault\n" +
                 "from EMAILMAS \n" +
-                "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '';";
+                "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '' " +
+                "AND CHG_DATE BETWEEN CONVERT(varchar(8), DATEADD(day, -28, GETDATE()), 112) AND CONVERT(varchar(8), DATEADD(day, -7, GETDATE()), 112) AND FLAG = '1' ";
 
             exportCsvData(ip, port, database, user, password, dataQuery, reportPath, true);
 
