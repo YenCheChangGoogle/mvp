@@ -348,9 +348,14 @@ public class GenAiCallingRptServ {
         if (Files.exists(csvPath)) {
             Files.delete(csvPath);
         }
-        try (BufferedWriter writer = Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8)) {
+        try (OutputStream os = Files.newOutputStream(csvPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+             Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+            // 寫入 BOM（僅在檔案最前面一次），確保 Excel 開啟時正確辨識 UTF-8 中文編碼
+            os.write(0xEF);
+            os.write(0xBB);
+            os.write(0xBF);
             writer.write(header);
-            writer.newLine();
+            writer.write("\n");
         }
     }
 
@@ -393,21 +398,21 @@ public class GenAiCallingRptServ {
 	try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
 	    ResultSetMetaData meta = rs.getMetaData();
 	    int colCount = meta.getColumnCount();
-	    //建立檔案，覆蓋舊內容
-	    try (OutputStream os = Files.newOutputStream(csvPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING); Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-		//如果需要 BOM，就在檔案開頭寫入 EF BB BF
-		if (withBom) {
-		    os.write(0xEF);
-		    os.write(0xBB);
-		    os.write(0xBF);
-		}
+	    //表頭已由 writeCsvHeader 寫入（含 BOM），這裡改用 APPEND 附加資料列，避免覆蓋表頭
+	    try (OutputStream os = Files.newOutputStream(csvPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND); Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
 		//開始寫 CSV 資料
 		while (rs.next()) {
 		    StringBuilder sb = new StringBuilder();
 		    for (int i = 1; i <= colCount; i++) {
 			if (i > 1) sb.append(",");
 			String val = rs.getString(i);
-			sb.append(val == null ? "" : val.trim());
+			val = (val == null) ? "" : val.trim();
+			if (i == 1 && !val.isEmpty()) {
+			    //第一欄「手機號碼」：包成 ="..." 避免 Excel 自動當數字解析、去掉前導0
+			    sb.append("=\"").append(val).append("\"");
+			} else {
+			    sb.append(val);
+			}
 		    }
 		    writer.write(sb.toString());
 		    writer.write("\n");
