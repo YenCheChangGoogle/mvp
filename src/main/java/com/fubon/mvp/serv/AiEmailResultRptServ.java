@@ -1,17 +1,13 @@
 package com.fubon.mvp.serv;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
@@ -170,37 +166,28 @@ public class AiEmailResultRptServ {
 
         //-----------------------------------------------------------------
         //步驟 3：產出 AI 外撥報表 EXCEL（取代 sqlcmd + sed）
-        //  a. 寫入 CSV 標頭（17 欄）
+        //  a. 寫入 CSV 標頭
         //  b. 執行 SQL 提取 FLAG='2' 且 PHONE 不為空的記錄
         //  c. 將資料附加至 EXCEL 檔案
         //-----------------------------------------------------------------
         String reportFile = AI_REPORT_FILENAME_PREFIX + rundate + ".xlsx";
-        Path reportPath = Paths.get(REPORTS_DIR, reportFile);
+        Files.createDirectories(Paths.get(REPORTS_DIR));
 
-        //寫入 CSV 標頭（17 欄位）
-        writeCsvHeader(reportPath);
+        Path reportPath = Paths.get(REPORTS_DIR, reportFile);
 
         //執行 SQL 提取資料並附加至 EXCEL
         String dataQuery = "set nocount on;\n" +
             "select M.ID AS '客戶統編',\n" +
             "       M.NAME AS '客戶姓名',\n" +
             "       M.AFTER_EMAIL_ADDR AS 'EMAIL',\n" +
-            "       SUBSTRING(M.CHG_DATE,1,4) + '/' + " +
-            "       SUBSTRING(M.CHG_DATE,5,2) + '/' + " +
-            "       SUBSTRING(M.CHG_DATE,7,2) as 'EMAIL異動日期',\n" +
-            "       SUBSTRING(M.CHG_TIME,1,2) + ':' + " +
-            "       SUBSTRING(M.CHG_TIME,3,2) + ':' + " +
-            "       SUBSTRING(M.CHG_TIME,5,2) as 'EMAIL異動時間',\n" +
+            "       SUBSTRING(M.CHG_DATE,1,4)+'/'+SUBSTRING(M.CHG_DATE,5,2)+'/'+SUBSTRING(M.CHG_DATE,7,2) as 'EMAIL異動日期',\n" +
+            "       SUBSTRING(M.CHG_TIME,1,2)+':'+SUBSTRING(M.CHG_TIME,3,2)+':'+SUBSTRING(M.CHG_TIME,5,2) as 'EMAIL異動時間',\n" +
             "       case when (M.STATUS is not null and M.STATUS <>'02') then '重發成功' else '重發失敗' end as 'AI重發確認信',\n" +
-            "       SUBSTRING(D.RESP_DATE,1,4) + '/' + \n" +
-            "       SUBSTRING(D.RESP_DATE,5,2) + '/' + \n" +
-            "       SUBSTRING(D.RESP_DATE,7,2) as '重發日期',\n" +
-            "       SUBSTRING(D.RESP_TIME,1,2) + ':' + " +
-            "       SUBSTRING(D.RESP_TIME,3,2) + ':' + " +
-            "       SUBSTRING(D.RESP_TIME,5,2) as '重發時間',\n" +
+            "       SUBSTRING(D.RESP_DATE,1,4)+'/'+SUBSTRING(D.RESP_DATE,5,2)+'/'+SUBSTRING(D.RESP_DATE,7,2) as '重發日期',\n" +
+            "       SUBSTRING(D.RESP_TIME,1,2)+':'+SUBSTRING(D.RESP_TIME,3,2)+':'+SUBSTRING(D.RESP_TIME,5,2) as '重發時間',\n" +
             "       case when (M.STATUS='02') then '02:失敗' when (M.STATUS='01') then '01:完成成功'  else '00:處理中' end as '回覆結果'\n" +
             "from EMAILMAS M left join EMAILDTL D on M.UUID=D.UUID \n" +
-            "where D.RESP_DATE > convert(varchar,DATEADD(day,-7,'20260706'),112) AND D.FLAG='2' AND D.TX_STATUS='11' order by M.CHG_DATE,M.CHG_TIME;";
+            "where D.RESP_DATE > convert(varchar,DATEADD(day,-7,GETDATE()),112) AND D.FLAG='2' AND D.TX_STATUS='11' order by M.CHG_DATE,M.CHG_TIME;";
 
         exportData(dataQuery, reportPath);
 
@@ -208,21 +195,6 @@ public class AiEmailResultRptServ {
         //步驟 4：透過 FTP 上傳報表至合作廠商（取代 ftp shell）
         //-----------------------------------------------------------------
         processFtpUpload(reportFile);
-    }
-
-    //=================================================================
-    //【步驟 4a】寫入 EXCEL 標頭
-    //=================================================================
-    private void writeCsvHeader(Path csvPath) throws IOException {
-        String header = "客戶統編, 客戶姓名, EMAIL, EMAIL異動日期, EMAIL異動時間, AI重發確認信, 重發時間, 回覆結果";
-
-        if (Files.exists(csvPath)) {
-            Files.delete(csvPath);
-        }
-        try (BufferedWriter writer = Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8)) {
-            writer.write(header);
-            writer.newLine();
-        }
     }
 
     //=================================================================
@@ -325,7 +297,7 @@ private void exportExcel(
         File ftpIni = new File(SH_DIR, "ftp2.ini");
         if (!ftpIni.exists()) {
             log.error("FTP ini file not found: {}", ftpIni.getAbsolutePath());
-            return;
+            throw new RuntimeException("FTP ini file not found: " + ftpIni.getAbsolutePath());
         }
 
         List<String> lines = Files.readAllLines(ftpIni.toPath(), StandardCharsets.UTF_8);
@@ -348,13 +320,13 @@ private void exportExcel(
 
         if (ftpUser.isEmpty() || ftpPass.isEmpty()) {
             log.error("FTP credentials are empty, cannot upload. ftpUser={}, ftpPass={}", ftpUser.isEmpty() ? "(empty)" : "***", ftpPass.isEmpty() ? "(empty)" : "***");
-            return;
+            throw new RuntimeException("FTP credentials are empty, cannot upload");
         }
 
         File localFile = new File(REPORTS_DIR, reportFile);
         if (!localFile.isFile()) {
             log.error("Local file not found: {}", localFile.getAbsolutePath());
-            return;
+            throw new RuntimeException("Local file not found: " + localFile.getAbsolutePath());
         }
         
         //TODO 上傳遠端的路徑
