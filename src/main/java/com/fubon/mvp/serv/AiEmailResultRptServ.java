@@ -406,10 +406,14 @@ private void exportExcel(
         try {
             ftp = new org.apache.commons.net.ftp.FTPClient();
             ftp.connect(ftpIp, 21);
-            ftp.login(ftpUser, ftpPass);
+            if (!ftp.login(ftpUser, ftpPass)) {
+                throw new IOException("FTP login failed, server reply: " + ftp.getReplyString());
+            }
             ftp.setFileType(org.apache.commons.net.ftp.FTPClient.BINARY_FILE_TYPE);
             ftp.enterLocalPassiveMode();
-            ftp.changeWorkingDirectory(remoteDir);
+            if (!ftp.changeWorkingDirectory(remoteDir)) {
+                throw new IOException("FTP changeWorkingDirectory(" + remoteDir + ") failed, server reply: " + ftp.getReplyString());
+            }
 
             Path filePath = Paths.get(localDir, fileName);
             try (InputStream localStream = Files.newInputStream(filePath)) {

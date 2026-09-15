@@ -52,8 +52,6 @@ public class Mvc110007Serv {
 	 * @return 下行電文
 	 */
 	public String service(Document doc) {
-		
-		log.info("inbound: " + doc.asXML());
 
 		// 1. 讀取輸入參數。
 		String uuid = null;
@@ -61,6 +59,7 @@ public class Mvc110007Serv {
 		if (node != null) {
 			uuid = node.getText();
 		}
+		log.info("inbound : (110007) uuid=" + uuid);
 		
 		// 2. 檢查輸入格式。
 		// (1) UUID不可為空值。
@@ -77,11 +76,17 @@ public class Mvc110007Serv {
 		}
 		
 		// 4. 確認只進不退狀態："00+小於15"。
-		log.info("before : " + master.toString());
+		log.info("before : (110007) uuid=" + master.getUuid() + ", status=" + master.getStatus() + ", txStatus=" + master.getTxStatus());
 		if (! (("00".equals(master.getStatus()) || "02".equals(master.getStatus())) 
 				&& ("15".compareTo(master.getTxStatus()) > 0))) {
-			this.dao.save(new EmailDetail(master, "15"));		// (1)明細檔。
-			this.imageDao.save(new EmailImage(master, "15"));	// (2)影像檔。
+			Exception detailEx = this.dao.save(new EmailDetail(master, "15"));		// (1)明細檔。
+			if (detailEx != null) {
+				log.warn("database : (110007) email detail(15) save error: " + detailEx.getMessage());
+			}
+			boolean imageOk = this.imageDao.save(new EmailImage(master, "15"));	// (2)影像檔。
+			if (!imageOk) {
+				log.warn("database : (110007) email image(15) save error.");
+			}
 			log.warn("check : (110007) was NOT necessary.");
 			return this.service.response("110007", true).asXML();						
 		}
@@ -105,7 +110,7 @@ public class Mvc110007Serv {
 		}
 		// (3) 影像檔記錄。
 		this.imageDao.save(new EmailImage(master));
-		log.info("after : " + master.toString());
+		log.info("after : (110007) uuid=" + master.getUuid() + ", status=" + master.getStatus() + ", txStatus=" + master.getTxStatus());
 		
 		// 6. 返回下行電文。
 		log.info("Mvc110007Serv : OK !");
