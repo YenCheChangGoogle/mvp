@@ -48,7 +48,11 @@ import com.fubon.mvp.data.EmailMaster;
  *               → master.FLAG="2"       (已獲取)
  *               → 明細兩筆：TX_STATUS=19 (AI回饋) + TX_STATUS=master.TX_STATUS
  *
- *   其他值       → 不處理，僅記錄 log
+ *   其他值(含空白、無效按鍵) → 視同選擇2處理，結束流程
+ *               → master.TX_STATUS="00" (全部完成)
+ *               → master.STATUS="01"    (全部流程完成)
+ *               → master.FLAG="2"       (已獲取)
+ *               → 明細兩筆：TX_STATUS=19 (AI回饋) + TX_STATUS=master.TX_STATUS
  *
  * 【Excel 欄位對應】(CallList_YYYYMMDD.xlsx)
  *   A列: 業務別          (不讀取)
@@ -179,7 +183,7 @@ public class ImportAiResultToProcessServ {
 			
 			//STATUS等於00
 			if(master.getStatus().equals("00")) {
-				// ★ 依「客戶選擇」分派處理
+				// ★ 依「客戶選擇」分派處理：只判斷是否為"1"，非"1"(含空白、"2"、"3"等其他按鍵)一律視同選擇2處理
 				String choice = row.getCustChoice();
 				
 				//選擇 1的
@@ -188,12 +192,12 @@ public class ImportAiResultToProcessServ {
 					this.handleChoice1(master);
 					countChoice1++;
 				} 
-				//選擇 非1的
+				//非1的(含空白、2、3等其他按鍵)
 				else {
-					// 客戶選擇 2或空白: 結束流程（註記無須變更 Email）
+					// 結束流程（註記無須變更 Email）
 					this.handleChoice2(master, row);
 					otherChoice++;
-				}	
+				}
 			}
 			//STATUS不等於00 無法處理的筆數
 			else {
@@ -207,7 +211,7 @@ public class ImportAiResultToProcessServ {
 		// -----------------------------------------------------------------
 		log.info("ImportAiResultProcessServ: 處理完成 - "
 			+ "客戶選擇1(重發)的筆數=" + countChoice1
-			+ ", 客戶選擇2或空白的筆數=" + otherChoice
+			+ ", 客戶選擇非1(結束流程)的筆數=" + otherChoice
 			+ ", 因為STATUS不等於00 無法處理的筆數="+statusNot00);
 	}
 

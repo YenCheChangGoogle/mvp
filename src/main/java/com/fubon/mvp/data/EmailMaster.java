@@ -106,21 +106,21 @@ public class EmailMaster extends SidClass {
 	@Column(name="CHECKER", length=100)
 	private String checker;
 
-	// 22. TEL_NO (AI外撥手機號碼)
-	@Column(name="TEL_NO", length=20)
-	private String telNo;
-	
-	// 23. FLAG (AI外撥標記: 1=待處理, 2=已獲取, 0=不處理)
+	// 22. FLAG (AI外撥標記: 1=待處理, 2=已獲取, 0=不處理)
 	@Column(name="FLAG", length=1)
 	private String flag;
 	
-	// 24. NAME (AI外撥客戶姓名)
-	@Column(name="NAME", length=120)
+	// 23. NAME (AI外撥客戶姓名)
+	@Column(name="NAME", length=62)
 	private String name;
 	
-	// 25. PHONE (AI外撥客戶電話)
+	// 24. PHONE (AI外撥客戶電話)
 	@Column(name="PHONE", length=20)
 	private String phone;
+	
+	// 25. MISS_FLAG (AI外撥遺失標記)
+	@Column(name="MISS_FLAG", length=3)
+	private String missFlag;
 	
 	//------------------------------------------------------------------------------
 	// 臨時型
@@ -464,14 +464,6 @@ public class EmailMaster extends SidClass {
 		this.checker = checker;
 	}
 
-	public String getTelNo() {
-		return telNo;
-	}
-
-	public void setTelNo(String telNo) {
-		this.telNo = telNo;
-	}
-
 	public String getFlag() {
 		return flag;
 	}
@@ -495,6 +487,14 @@ public class EmailMaster extends SidClass {
 	public void setPhone(String phone) {
 		this.phone = phone;
 	}
+	public String getMissFlag() {
+		return missFlag;
+	}
+	
+	public void setMissFlag(String missFlag) {
+		this.missFlag = missFlag;
+	}
+	
 
 	public static long getSerialversionuid() {
 		return serialVersionUID;
@@ -507,8 +507,8 @@ public class EmailMaster extends SidClass {
 				+ ", afterEmail=" + afterEmail + ", reason=" + reason + ", changeDate=" + changeDate + ", changeTime="
 				+ changeTime + ", channel=" + channel + ", subChannel=" + subChannel + ", online=" + online
 				+ ", tranCode=" + tranCode + ", status=" + status + ", txStatus=" + txStatus + ", errorCode="
-				+ errorCode + ", remark=" + remark + ", checker=" + checker + ", telNo=" + telNo + ", flag=" + flag
-				+ ", name=" + name + ", phone=" + phone + ", queryUuid=" + queryUuid + ", beginDate=" + beginDate
+				+ errorCode + ", remark=" + remark + ", checker=" + checker + ", flag=" + flag
+				+ ", name=" + name + ", phone=" + phone + ", missFlag=" + missFlag + ", queryUuid=" + queryUuid + ", beginDate=" + beginDate
 				+ ", endDate=" + endDate + ", nextKey=" + nextKey + ", invalid110001()=" + invalid110001()
 				+ ", invalid110002()=" + invalid110002() + ", invalid310001()=" + invalid310001() + ", invalid310002()="
 				+ invalid310002() + ", isCancel()=" + isCancel() + ", getUuid()=" + getUuid() + ", getIdNo()="
@@ -520,8 +520,8 @@ public class EmailMaster extends SidClass {
 				+ ", getTranCode()=" + getTranCode() + ", getStatus()=" + getStatus() + ", getTxStatus()="
 				+ getTxStatus() + ", getErrorCode()=" + getErrorCode() + ", getRemark()=" + getRemark()
 				+ ", getQueryUuid()=" + getQueryUuid() + ", getBeginDate()=" + getBeginDate() + ", getEndDate()="
-				+ getEndDate() + ", getNextKey()=" + getNextKey() + ", getChecker()=" + getChecker() + ", getTelNo()="
-				+ getTelNo() + ", getFlag()=" + getFlag() + ", getName()=" + getName() + ", getPhone()=" + getPhone()
+				+ getEndDate() + ", getNextKey()=" + getNextKey() + ", getChecker()=" + getChecker()
+				+ ", getFlag()=" + getFlag() + ", getName()=" + getName() + ", getPhone()=" + getPhone() + ", getMissFlag()=" + getMissFlag()
 				+ "]";
 	}
 }

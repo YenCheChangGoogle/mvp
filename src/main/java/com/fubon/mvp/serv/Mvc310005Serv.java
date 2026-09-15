@@ -254,7 +254,7 @@ public class Mvc310005Serv {
 				// (3) CUST_NAME
 				repeat.addElement("CUST_NAME").setText(EmptyUtil.orEmpty(m.getChName()));
 				// (4) TEL_NO (AI外撥手機號碼)
-				repeat.addElement("TEL_NO").setText(EmptyUtil.orEmpty(m.getTelNo()));
+				repeat.addElement("TEL_NO").setText(EmptyUtil.orEmpty(m.getPhone()));
 				// (5) FLAG (AI外撥標記: 1=待處理, 2=已獲取, 0=不處理)
 				repeat.addElement("FLAG").setText(EmptyUtil.orEmpty(m.getFlag()));
 				// (6) STATUS

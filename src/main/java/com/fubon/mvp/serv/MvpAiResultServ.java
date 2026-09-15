@@ -145,9 +145,9 @@ public class MvpAiResultServ {
 						String chName = this.proxy.value(doc, "CH_NAME");
 						String telNo = this.proxy.value(doc, "TEL_NO");
 						
-						// 儲存姓名+手機至 CHECKER/TEL_NO 欄位
+						// 儲存姓名+手機至 CHECKER/PHONE 欄位
 						master.setChecker(chName);
-						master.setTelNo(telNo);
+						master.setPhone(telNo);
 						master.setFlag("2");
 						master.setStatus("01");
 						master.setTxStatus("00");

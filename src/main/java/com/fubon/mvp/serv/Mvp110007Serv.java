@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
  *
  * 說明：每3秒檢查 EMAILMAS 中已寄出驗證信但超過6天仍未回覆的記錄，
  *      透過 ESB (MVP067050) 向核心系統索取客戶姓名與手機號碼，
- *      儲存至 EMAILMAS 的 CHECKER / TEL_NO 欄位。
+ *      儲存至 EMAILMAS 的 CHECKER / PHONE 欄位。
  *      仿照 Mvp067000Serv 之開發模式。
  *
  * ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -55,7 +55,7 @@ import reactor.core.publisher.Mono;
  * 
  * 6日未回覆:
  *  發送上行電文給 ESB (MVP067050) 取得客戶姓名與手機號碼
- *   成功: 儲存至 EMAILMAS 的 CHECKER / TEL_NO 欄位 並更新 STATUS 與 TX_STATUS
+ *   成功: 儲存至 EMAILMAS 的 CHECKER / PHONE 欄位 並更新 STATUS 與 TX_STATUS
  *
  * 註：逾期3日 由 Mvp110008Serv 負責重發驗證信
  * 註：逾期6日 由 Mvp110007Serv 負責索取資料並產生AI外撥名單
@@ -275,6 +275,7 @@ public class Mvp110007Serv {
 					master.setStatus("00"); //"00": 處理中
 					master.setTxStatus("17"); //"17": AI外撥
 					master.setErrorCode("");
+					master.setMissFlag("");
 
 					message = "準備AI外撥名單資料: " + master.toString() + ", chName=" + chName + ", telNo=" + telNo;
 				    }
@@ -291,6 +292,7 @@ public class Mvp110007Serv {
 					master.setTxStatus("81");
 					master.setStatus("00");
 					master.setErrorCode("E111"); //E111 查無手機號碼
+					master.setMissFlag(missFlag);
 					this.dao.save(master); //儲存主檔
 					this.dao.save(new EmailDetail(master)); //儲存紀錄
 					
@@ -298,6 +300,7 @@ public class Mvp110007Serv {
 					master.setTxStatus("13");
 					master.setStatus("00");
 					master.setErrorCode("");
+					master.setMissFlag("");
 					message="沒有手機號碼 "+master.toString()+" 調整 EMAILMAS STATUS=00、TX_STATUS=13、ERR_CODE=空 讓下禮拜才有辦法再執行一次";
 				    }
 				    
