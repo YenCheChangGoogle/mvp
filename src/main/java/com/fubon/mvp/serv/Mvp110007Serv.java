@@ -79,6 +79,8 @@ public class Mvp110007Serv {
 
 	// ESB無法連綫("E010")
 	private String notEsbCode;
+	// 查無手機號碼("E111")
+	private String noPhoneCode;
 
 	// 啓動JOB設定值
 	@Value("${default.job.4}")
@@ -98,6 +100,7 @@ public class Mvp110007Serv {
 		this.job = "1".equals(this.defaultJob4); // 啓動JOB開關
 
 		this.notEsbCode = this.error.notEsb()[0];	// "E010": 無法連綫。
+		this.noPhoneCode = this.error.mail(11)[0];	// "E111": 查無手機號碼。
 		
 		if (Log.test) {
 			log.info("initial: mvp110007");
@@ -291,7 +294,7 @@ public class Mvp110007Serv {
 					//(1)
 					master.setTxStatus("81");
 					master.setStatus("00");
-					master.setErrorCode("E111"); //E111 查無手機號碼
+					master.setErrorCode(this.noPhoneCode); //E111 查無手機號碼
 					master.setMissFlag(missFlag);
 					this.dao.save(master); //儲存主檔
 					this.dao.save(new EmailDetail(master)); //儲存紀錄

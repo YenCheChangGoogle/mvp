@@ -72,6 +72,7 @@ public class ErrorDescDao {
 		this.pool.put(uuid, "UUID已存在");
 		// E012 = UUID不存在
 		this.pool.put(notuuid, "UUID不存在");
+		
 		// (4) 郵件匝道類。
 		this.pool.put(mail + "00", "郵件服務器(Mail Hunter)無法訪問");
 		this.pool.put(mail + "01", "呼叫成功");
@@ -83,7 +84,8 @@ public class ErrorDescDao {
 		this.pool.put(mail + "07", "電子郵件為黑名單");
 		this.pool.put(mail + "08", "此IP不允許使用");
 		this.pool.put(mail + "09", "專案類別預設值不存在");
-		this.pool.put(mail + "10", "其它錯誤，例如DB連線問題");		
+		this.pool.put(mail + "10", "其它錯誤，例如DB連線問題");
+		this.pool.put(mail + "11", "查無手機號碼");
 		
 		// 2. 更新資料庫。
 		for (String key : this.pool.keySet()) {
