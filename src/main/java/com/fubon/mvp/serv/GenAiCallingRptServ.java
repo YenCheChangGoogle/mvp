@@ -209,7 +209,7 @@ public class GenAiCallingRptServ {
             "       'NA' as SMS5,\n" +
             "       'NA' as SMSDefault\n" +
             "from EMAILMAS \n" +
-            "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '' " +
+            "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '' AND LEN(PHONE) = 10 AND PHONE LIKE '09%' " +
             "AND CHG_DATE BETWEEN CONVERT(varchar(8), DATEADD(day, -28, GETDATE()), 112) AND CONVERT(varchar(8), DATEADD(day, -7, GETDATE()), 112) AND FLAG = '1' ";
 
         exportCsvData(dataQuery, reportPath, true);

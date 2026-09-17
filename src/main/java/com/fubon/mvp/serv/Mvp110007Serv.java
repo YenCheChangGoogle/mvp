@@ -259,6 +259,7 @@ public class Mvp110007Serv {
 				    master.setStatus("00"); //00 處理中
 				    master.setTxStatus("13"); //13 寄信後
 				    master.setErrorCode("");
+				    master.setMissFlag("001"); //MISS_FLAG=001
 				    message=master.toString()+" (MISS_FLAG=001) 不索取姓名電話至資料庫";
 				}
 				else {
@@ -341,6 +342,10 @@ public class Mvp110007Serv {
 				message="呼叫電文 67050 異常 " + master.toString() + ", errId=" + errId +" errorMsg=" + this.proxy.value(response, "EMSGTXT");
 				
 				log.error("6日未回覆 處理階段6 (呼叫電文中處置異常) "+message);
+				
+				master.setMissFlag("");
+				master.setName("");
+				master.setPhone("");
 			}
 
 			// 儲存資料庫
