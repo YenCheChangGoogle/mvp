@@ -415,11 +415,21 @@ public class ImportAiResultServ {
                     entity.setSms5(getRawCellString(row.getCell(23)));
                     entity.setSmsDefault(getRawCellString(row.getCell(24)));
 
-                    //★ 必填欄位（CHNL/ID/NAME/PURPOSE/PHONE）為空則跳過，避免違反 NOT NULL 約束
-                    if (isBlank(entity.getChannel()) || isBlank(entity.getIdNo())
-                            || isBlank(entity.getName()) || isBlank(entity.getPurpose())
-                            || isBlank(entity.getPhone())) {
-                        log.warn("EMAILAIOUT備份: 第{}列必填欄位(CHNL/ID/NAME/PURPOSE/PHONE)有缺漏，跳過此列", row.getRowNum() + 1);
+                    /*
+
+                     ★ 必填欄位（CHNL/ID/NAME/PURPOSE/PHONE）為空則跳過，避免違反 NOT NULL 約束
+                     調整為
+                     ★ 必填欄位（CHNL/ID/PHONE）為空則跳過，避免違反 NOT NULL 約束
+                     
+                    */
+                    if (
+                	isBlank(entity.getChannel()) || 
+                	isBlank(entity.getIdNo()) || 
+                	//isBlank(entity.getName()) || 
+                	//isBlank(entity.getPurpose()) || 
+                	isBlank(entity.getPhone())) {
+                        //log.warn("EMAILAIOUT備份: 第{}列必填欄位(CHNL/ID/NAME/PURPOSE/PHONE)有缺漏，跳過此列", row.getRowNum() + 1);
+                        log.warn("EMAILAIOUT備份: 第{}列必填欄位(CHNL/ID/PHONE)有缺漏，跳過此列", row.getRowNum() + 1);
                         skipCount++;
                         continue;
                     }
