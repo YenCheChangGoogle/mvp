@@ -3,6 +3,9 @@ package com.fubon.mvp.dao;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.fubon.mvp.data.EmailMaster;
 
@@ -152,6 +155,38 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
      *       
      */
 	List<EmailMaster> findByStatusAndTxStatusAndChangeDateGreaterThanAndChangeDateLessThanAndFlagOrderByChangeDateAsc(String status, String txStatus, String startDate, String endDate, String flag);
-	
-	
+
+	/**
+	 * 11. 原子性條件式更新 (CAS, Compare-And-Swap)。
+	 *     只有在目前 status/txStatus 仍與預期值相符時才會真正更新，並以資料庫的 row lock
+	 *     保證同一筆(以UUID識別)在同一瞬間只有一個呼叫端能更新成功。
+	 *     用來取代「先查詢(SELECT)再更新(UPDATE)」這種寫法，避免因為：
+	 *       (1) 排程重疊觸發 (上一輪尚未跑完，下一輪又被觸發)
+	 *       (2) 查詢清單本身重複
+	 *       (3) 多執行緒/多主機同時處理
+	 *     所造成的「同一筆UUID被處理兩次」(EMAILDTL被插入兩筆重複明細) 的問題。
+	 * @param uuid 識別值(WHERE條件)
+	 * @param flag 欲更新的重發標記
+	 * @param tranCode 欲更新的交易代號
+	 * @param newStatus 欲更新的主狀態
+	 * @param newTxStatus 欲更新的交易狀態
+	 * @param errorCode 欲更新的錯誤碼
+	 * @param expectedStatus 預期目前的主狀態(CAS條件，需與DB目前值相符才會更新)
+	 * @param expectedTxStatus 預期目前的交易狀態(CAS條件，需與DB目前值相符才會更新)
+	 * @return 實際影響筆數。1=更新成功；0=未更新到任何資料(代表已被其他呼叫處理過，應略過)
+	 */
+	@Modifying
+	@Query("UPDATE EMAILMAS m SET m.flag = :flag, m.tranCode = :tranCode, m.status = :newStatus, "
+			+ "m.txStatus = :newTxStatus, m.errorCode = :errorCode "
+			+ "WHERE m.uuid = :uuid AND m.status = :expectedStatus AND m.txStatus = :expectedTxStatus")
+	int updateOverdueIfMatches(
+			@Param("uuid") String uuid,
+			@Param("flag") String flag,
+			@Param("tranCode") String tranCode,
+			@Param("newStatus") String newStatus,
+			@Param("newTxStatus") String newTxStatus,
+			@Param("errorCode") String errorCode,
+			@Param("expectedStatus") String expectedStatus,
+			@Param("expectedTxStatus") String expectedTxStatus);
+
 }

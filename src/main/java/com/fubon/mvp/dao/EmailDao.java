@@ -279,7 +279,34 @@ public class EmailDao {
 	}
 	
 	/**
-	 * 13. 依據身分證字號讀取實體 (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
+	 * 13. 原子性條件式更新逾時未回覆記錄之主檔 (CAS)。
+	 *     用來取代「先查詢(dao.uuid) 再更新(dao.save)」的寫法，避免因排程重疊觸發、
+	 *     查詢清單重複、或多執行緒同時處理，造成同一筆UUID被重複處理
+	 *     (進而導致 EMAILDTL 被插入兩筆重複明細) 的問題。
+	 * @param uuid 識別值
+	 * @param flag 欲更新的重發標記
+	 * @param tranCode 欲更新的交易代號
+	 * @param newStatus 欲更新的主狀態
+	 * @param newTxStatus 欲更新的交易狀態
+	 * @param errorCode 欲更新的錯誤碼
+	 * @param expectedStatus 預期目前的主狀態(CAS條件)
+	 * @param expectedTxStatus 預期目前的交易狀態(CAS條件)
+	 * @return true=更新成功(影響1筆)；false=未更新到任何資料(已被處理過或發生例外)，應略過
+	 */
+	public boolean updateOverdueIfMatches(String uuid, String flag, String tranCode, String newStatus,
+			String newTxStatus, String errorCode, String expectedStatus, String expectedTxStatus) {
+		try {
+			int rows = this.masterRepo.updateOverdueIfMatches(uuid, flag, tranCode, newStatus, newTxStatus,
+					errorCode, expectedStatus, expectedTxStatus);
+			return rows == 1;
+		} catch (Exception ex) {
+			log.error(ex.toString());
+			return false;
+		}
+	}
+
+	/**
+	 * 14. 依據身分證字號讀取實體 (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
 	 * @param idNo 身分證字號
 	 * @return 實體
 	 */

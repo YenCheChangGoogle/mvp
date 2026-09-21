@@ -44,7 +44,10 @@ public class Mvp110008Serv {
     private EmailHostDao hostDao;
     @Autowired
     private EmailImageDao imageDao;
-    
+
+    // 排程執行中標記，防止 schedule() 重疊執行 (例如上一輪尚未跑完，下一輪又被觸發)
+    private final java.util.concurrent.atomic.AtomicBoolean scheduleRunning = new java.util.concurrent.atomic.AtomicBoolean(false);
+
     /**
      * 1. 初始程序
      */
@@ -155,59 +158,55 @@ public class Mvp110008Serv {
     	
     	log.info("█ █ █ █ █ 處理逾時3日未回覆 █ █ █ █ █");
     	
-        // 1. 再查一次 DB, 避免時間差
-        EmailMaster current = this.dao.uuid(master.getUuid());
-        if (current == null) {
-            log.warn("check : (110008) entity was missing.");
-            return false;
-        }
-        // 2. 確認狀態：status="00" 且 txStatus="13"
-        if (! "00".equals(current.getStatus())) {
-        	log.warn("目前status="+current.getStatus()+" 處理逾時3日未回覆的記錄 狀態必須 status=00 且 txStatus=13");
-            return false;
-        }
-        if (! "13".equals(current.getTxStatus())) {
-        	log.warn("目前txStatus="+current.getTxStatus()+" 處理逾時3日未回覆的記錄 狀態必須 status=00 且 txStatus=13");
+        // 1. 原子性條件式更新 (CAS)：只有目前 status="00" 且 txStatus="13" 時才會更新成功。
+        //    以此取代「先查詢再更新」的寫法，利用資料庫 row lock 保證同一筆UUID在同一瞬間
+        //    只會被一個呼叫端更新成功，可同時避免：排程重疊觸發、查詢清單重複、多執行緒同時處理
+        //    所造成的重複處理問題(同一筆UUID的 EMAILDTL 被插入兩筆重複明細)。
+        boolean updated = this.dao.updateOverdueIfMatches(
+        		master.getUuid(),
+        		"1",         // flag：重發標記
+        		"110008",    // tranCode：交易代號
+        		"00",        // newStatus：處理中
+        		"01",        // newTxStatus：收到申請
+        		"",          // errorCode：清除錯誤碼
+        		"00",        // expectedStatus：預期目前status
+        		"13");       // expectedTxStatus：預期目前txStatus
+
+        if (! updated) {
+        	log.warn("uuid=" + master.getUuid() + " 目前 status/txStatus 已不符合 status=00 且 txStatus=13，"
+        			+ "可能已被其他執行緒/排程處理過，略過本次處理以避免重複寫入");
             return false;
         }
 
-        //三日未回撥 重發驗證信
-        // 3. 更新資料庫
-        current.setFlag("1");           // "1": 重發標記
-        current.setTranCode("110008");  // 交易代號：110008
-        current.setStatus("00");        // "00": 處理中
-        current.setTxStatus("01");      // "01": 收到申請
-        current.setErrorCode("");       // 清除錯誤碼
-        
-        //主檔紀錄 EMAILMAS
-        Exception ex = this.dao.save(current);
-        if (ex != null) {
-            log.warn("database: email master error");
-            return false;
-        }
-        
+        // 2. 同步更新記憶體物件狀態 (需與上方實際寫入DB的值一致)，供建立明細檔使用
+        master.setFlag("1");
+        master.setTranCode("110008");
+        master.setStatus("00");
+        master.setTxStatus("01");
+        master.setErrorCode("");
+
         //明細檔紀錄 EMAILDTL
-        ex = this.dao.save(new EmailDetail(current));
+        Exception ex = this.dao.save(new EmailDetail(master));
         if (ex != null) {
             log.warn("database: email detail error");
             return false;
         }
         
         /*
-        if(current.getChannel()==null) {
-            current.setChannel("-");
+        if(master.getChannel()==null) {
+            master.setChannel("-");
         }
-        if(current.getSubChannel()==null) {
-            current.setSubChannel("-");
+        if(master.getSubChannel()==null) {
+            master.setSubChannel("-");
         }
         //影像檔記錄 EMAILIMG
-        if(this.imageDao.save(new EmailImage(current))) {
+        if(this.imageDao.save(new EmailImage(master))) {
         	log.warn("database: email image error");
         	return false;
         }
         */
         
-        log.info("Mvp110008Serv : uuid='" + current.getUuid() + "'");
+        log.info("Mvp110008Serv : uuid='" + master.getUuid() + "'");
         return true;
     }
 
@@ -237,35 +236,55 @@ public class Mvp110008Serv {
     
     //排程執行週期設
     @Scheduled(cron = "${mvp.110008.cron.expression}", zone = "${mvp.110008.cron.zone}")
-    
     public void schedule() {
         
         if (! this.job) {
             return;
         }
-        
-        log.info("三日未回覆重發驗證信處理");
-        
-        // 1. 是主服務器？
-        if (! this.hostDao.isMain()) {
+
+        // 0. 防止本排程重疊執行（避免同一批清單被重複處理）
+        if (! this.scheduleRunning.compareAndSet(false, true)) {
+            log.warn("三日未回覆重發驗證信處理 上一輪尚未執行完成，本次略過以避免重複處理");
             return;
         }
-        
-        // 2. 搜尋逾時未回覆清單
-        List<EmailMaster> entities = this.dao.findOverdue3DaysAiCalling();
-        if (entities.size() == 0) {
-            return;
-        }
-        
-        // 3. 處理逾時清單
-        log.info("處理逾時清單 目前人數 "+entities.size()+" 人");
-        for (EmailMaster master : entities) {
-            try {
-                // 呼叫處理單筆的方法
-                processOverdueRecord(master);
-            } catch (Exception e) {
-                log.error("處理逾時記錄時發生錯誤: uuid=" + master.getUuid(), e);
+
+        try {
+            log.info("三日未回覆重發驗證信處理");
+
+            // 1. 是主服務器？
+            if (! this.hostDao.isMain()) {
+                return;
             }
+
+            // 2. 搜尋逾時未回覆清單
+            List<EmailMaster> entities = this.dao.findOverdue3DaysAiCalling();
+            if (entities.size() == 0) {
+                return;
+            }
+
+            // 2.1 依 UUID 去重 (防禁性寫法：假如查詢結果本身包含重複UUID，避免同一筆被處理兩次)
+            java.util.Set<String> seenUuid = new java.util.LinkedHashSet<String>();
+            List<EmailMaster> distinctEntities = new java.util.ArrayList<EmailMaster>();
+            for (EmailMaster master : entities) {
+                if (seenUuid.add(master.getUuid())) {
+                    distinctEntities.add(master);
+                } else {
+                    log.warn("查詢結果出現重複UUID，已略過: uuid=" + master.getUuid());
+                }
+            }
+
+            // 3. 處理逾時清單
+            log.info("處理逾時清單 目前人數 "+distinctEntities.size()+" 人");
+            for (EmailMaster master : distinctEntities) {
+                try {
+                    // 呼叫處理單筆的方法
+                    processOverdueRecord(master);
+                } catch (Exception e) {
+                    log.error("處理逾時記錄時發生錯誤: uuid=" + master.getUuid(), e);
+                }
+            }
+        } finally {
+            this.scheduleRunning.set(false);
         }
     }
 }
