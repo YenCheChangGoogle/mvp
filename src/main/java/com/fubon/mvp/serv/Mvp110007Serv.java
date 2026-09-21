@@ -175,7 +175,7 @@ public class Mvp110007Serv {
 			log.info("6日未回覆 處理階段1 : " + master.toString());
 
 			// (3.2) 確認狀態是否符合處理條件。
-			boolean isOverdue = "00".equals(master.getStatus()) && "13".equals(master.getTxStatus());
+			boolean isOverdue = "00".equals(master.getStatus()) && ("13".equals(master.getTxStatus()) || "17".equals(master.getTxStatus()));
 			boolean isRetry = "02".equals(master.getStatus()) && "80".equals(master.getTxStatus())  && this.notEsbCode.equals(master.getErrorCode());
 
 			if (! isOverdue && ! isRetry) {

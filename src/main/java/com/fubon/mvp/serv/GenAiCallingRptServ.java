@@ -187,7 +187,8 @@ public class GenAiCallingRptServ {
         //TODO 執行 SQL 提取資料並附加至 CSV
         String dataQuery = "set nocount on;\n" +
             "select RTRIM(PHONE) as [手機號碼],\n" +
-            "       RTRIM(ID) as [客戶ID],\n" +
+        	
+            "       LEFT(RTRIM(ID), 10) as [客戶ID],\n" +
             "       RTRIM(NAME) as [客戶姓名],\n" +
             
             //"       '有關您變更留存於本行的電子郵件信箱之相關訊息要通知您' as [本次外撥目的],\n" +
@@ -209,7 +210,7 @@ public class GenAiCallingRptServ {
             "       'NA' as SMS5,\n" +
             "       'NA' as SMSDefault\n" +
             "from EMAILMAS \n" +
-            "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '' AND LEN(PHONE) = 10 AND PHONE LIKE '09%' " +
+            "where STATUS='00' AND TX_STATUS='17' AND PHONE IS NOT NULL AND PHONE <> '' AND LEN(PHONE) = 10 AND PHONE LIKE '09%' AND LEN(ID) <=10 " +
             "AND CHG_DATE BETWEEN CONVERT(varchar(8), DATEADD(day, -28, GETDATE()), 112) AND CONVERT(varchar(8), DATEADD(day, -7, GETDATE()), 112) AND FLAG = '1' ";
 
         exportCsvData(dataQuery, reportPath, true);
