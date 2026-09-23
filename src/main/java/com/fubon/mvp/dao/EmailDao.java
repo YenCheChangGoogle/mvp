@@ -306,7 +306,37 @@ public class EmailDao {
 	}
 
 	/**
-	 * 14. 依據身分證字號讀取實體 (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
+	 * 14. 原子性搖單 (CAS)：六日未回覆AI外拨用。
+	 *     用來取代 Mvp110007Serv 原本「先查詢(dao.uuid)再更新(dao.save)」的寫法，
+	 *     避免因排程重疊觸發、查詢清單重複、或多執行緒同時處理，造成同一筆UUID被重複
+	 *     呼叫 ESB 及重複寫入 EMAILDTL 的問題。
+	 * @param uuid 識別值
+	 * @param tranCode 欲更新的交易代號
+	 * @param newStatus 欲更新的主狀態
+	 * @param newTxStatus 欲更新的交易狀態
+	 * @param newErrorCode 欲更新的錯誤碼
+	 * @param overdueStatus 「逾期6日未回覆」條件：預期主狀態
+	 * @param overdueTxStatusList 「逾期6日未回覆」條件：預期交易狀態清單(IN)，對應原本 isOverdue 判斷式 txStatus IN ("13","17")
+	 * @param retryStatus 「ESB重試」條件：預期主狀態
+	 * @param retryTxStatus 「ESB重試」條件：預期交易狀態
+	 * @param retryErrorCode 「ESB重試」條件：預期錯誤碼
+	 * @return true=搖單成功(影響1筆)；false=未更新到任何資料(已被處理過、不符合條件或發生例外)，應略過
+	 */
+	public boolean claimForAiCalling(String uuid, String tranCode, String newStatus, String newTxStatus,
+			String newErrorCode, String overdueStatus, List<String> overdueTxStatusList, String retryStatus,
+			String retryTxStatus, String retryErrorCode) {
+		try {
+			int rows = this.masterRepo.claimForAiCalling(uuid, tranCode, newStatus, newTxStatus, newErrorCode,
+					overdueStatus, overdueTxStatusList, retryStatus, retryTxStatus, retryErrorCode);
+			return rows == 1;
+		} catch (Exception ex) {
+			log.error(ex.toString());
+			return false;
+		}
+	}
+
+	/**
+	 * 15. 依據身分證字號讀取實體 (取 STATUS=00 且排除CHANNEL=不能是JS 且排除ON_OFF_LINE=Y)
 	 * @param idNo 身分證字號
 	 * @return 實體
 	 */

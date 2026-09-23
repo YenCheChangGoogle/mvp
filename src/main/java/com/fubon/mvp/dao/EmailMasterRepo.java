@@ -189,4 +189,41 @@ public interface EmailMasterRepo extends JpaRepository<EmailMaster, Long> {
 			@Param("expectedStatus") String expectedStatus,
 			@Param("expectedTxStatus") String expectedTxStatus);
 
+	/**
+	 * 12. 原子性搖單 (CAS)：六日未回覆AI外拨用。
+	 *     只有目前狀態符合「逾期6日未回覆(status=?/txStatus=?)」或「ESB重試(status=?/txStatus=?/errorCode=?)」
+	 *     兩種條件其中之一時才會更新成功，用來取代 Mvp110007Serv 原本「先查詢再更新」的寫法，
+	 *     避免排程重疊觸發、清單重複、多執行緒同時處理，造成同一筆被重複呼叫 ESB 、
+	 *     重複寫入 EMAILDTL 的問題。
+	 * @param uuid 識別值(WHERE條件)
+	 * @param tranCode 欲更新的交易代號
+	 * @param newStatus 欲更新的主狀態
+	 * @param newTxStatus 欲更新的交易狀態
+	 * @param newErrorCode 欲更新的錯誤碼
+	 * @param overdueStatus 「逾期6日未回覆」條件：預期主狀態
+	 * @param overdueTxStatusList 「逾期6日未回覆」條件：預期交易狀態清單(IN)，對應原本 isOverdue 判斷式 txStatus IN ("13","17")
+	 * @param retryStatus 「ESB重試」條件：預期主狀態
+	 * @param retryTxStatus 「ESB重試」條件：預期交易狀態
+	 * @param retryErrorCode 「ESB重試」條件：預期錯誤碼
+	 * @return 實際影響筆數。1=搖單成功；0=未更新到任何資料(已被其他呼叫處理過或不符合條件，應略過)
+	 */
+	@Modifying
+	@Query("UPDATE EMAILMAS m SET m.tranCode = :tranCode, m.status = :newStatus, "
+			+ "m.txStatus = :newTxStatus, m.errorCode = :newErrorCode "
+			+ "WHERE m.uuid = :uuid AND ("
+			+ "  (m.status = :overdueStatus AND m.txStatus IN (:overdueTxStatusList)) "
+			+ "  OR (m.status = :retryStatus AND m.txStatus = :retryTxStatus AND m.errorCode = :retryErrorCode)"
+			+ ")")
+	int claimForAiCalling(
+			@Param("uuid") String uuid,
+			@Param("tranCode") String tranCode,
+			@Param("newStatus") String newStatus,
+			@Param("newTxStatus") String newTxStatus,
+			@Param("newErrorCode") String newErrorCode,
+			@Param("overdueStatus") String overdueStatus,
+			@Param("overdueTxStatusList") List<String> overdueTxStatusList,
+			@Param("retryStatus") String retryStatus,
+			@Param("retryTxStatus") String retryTxStatus,
+			@Param("retryErrorCode") String retryErrorCode);
+
 }

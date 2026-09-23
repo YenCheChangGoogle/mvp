@@ -92,6 +92,10 @@ public class Mvp110007Serv {
 	@Value("${mvp.110007.MUST_MONDAY}")
 	private boolean MUST_MONDAY;
 
+	// 排程執行中標記，防止本排程重疊執行 (例如上一輪尚未跑完，下一輪又被觸發)，
+	// 避免同一批清單被處理兩次，造成重複呼叫 ESB、重複寫入 EMAILDTL
+	private final java.util.concurrent.atomic.AtomicBoolean scheduleRunning = new java.util.concurrent.atomic.AtomicBoolean(false);
+
 	/**
 	 * 初始程序
 	 */
@@ -129,7 +133,14 @@ public class Mvp110007Serv {
         if (! this.job) {
             return;
         }
-		
+
+        // 0. 防止本排程重疊執行 (避免同一批清單被處理兩次)
+        if (! this.scheduleRunning.compareAndSet(false, true)) {
+        	log.warn("六日未回覆AI外撥處理 上一輪尚未執行完畢，本次略過，避免重複處理");
+        	return;
+        }
+
+        try {
 		log.info("六日未回覆AI外撥處理");
 
 		// 1. 是主服務器?
@@ -166,32 +177,38 @@ public class Mvp110007Serv {
 		// 3. 執行 JOB 程序
 		for (EmailMaster item : jobList) {
 
-			// (3.1) 避免時間差問題,再查詢一次 (仿照 Mvp067000Serv)
+			// (3.1)+(3.2)+(3.3) 原子性條件式搶佔更新 (CAS)：
+			//      取代原本「先查詢(dao.uuid)確認狀態、再更新(dao.save)」的寫法，
+			//      利用資料庫 row lock 保證同一筆(以UUID識別)在同一瞬間只有一個呼叫端能搶佔成功，
+			//      避免因排程重疊觸發、查詢清單重複、或多執行緒同時處理，
+			//      造成同一筆被重複呼叫 ESB、重複寫入 EMAILDTL 的問題。
+			//      條件與原本邏輯相同：isOverdue(status=00 且 txStatus IN(13,17)) 或 isRetry(status=02 且 txStatus=80 且 errorCode=notEsbCode)
+			String oldStatus = item.getStatus();
+			String oldError = item.getErrorCode();
+
+			boolean claimed = this.dao.claimForAiCalling(
+					item.getUuid(),
+					"067050",                                     // tranCode
+					"00",                                         // newStatus：處理中
+					"80",                                         // newTxStatus：請求核心資料中
+					"",                                           // newErrorCode
+					"00", java.util.Arrays.asList("13", "17"),    // 逾期未回覆 條件
+					"02", "80", this.notEsbCode);                 // ESB重試 條件
+
+			if (! claimed) {
+				log.warn("check : (110007) uuid=" + item.getUuid() + " 目前狀態已不符合處理條件，可能已被其他執行緒/排程處理過，略過");
+				continue;
+			}
+
+			// 搶佔成功後，避免時間差問題，重新查詢一次 (與原邏輯一致：dao.uuid 取得最新完整資料，
+			// 確保後續組電文、寫明細用的是資料庫當下最新資料，而非清單快照當時的舊資料)
 			EmailMaster master = this.dao.uuid(item.getUuid());
 			if (master == null) {
-				log.warn("check : (110007) entity was missing, uuid=" + item.getUuid());
+				log.warn("check : (110007) entity was missing after claim, uuid=" + item.getUuid());
 				continue;
 			}
-			log.info("6日未回覆 處理階段1 : " + master.toString());
-
-			// (3.2) 確認狀態是否符合處理條件。
-			boolean isOverdue = "00".equals(master.getStatus()) && ("13".equals(master.getTxStatus()) || "17".equals(master.getTxStatus()));
-			boolean isRetry = "02".equals(master.getStatus()) && "80".equals(master.getTxStatus())  && this.notEsbCode.equals(master.getErrorCode());
-
-			if (! isOverdue && ! isRetry) {
-				log.warn("check : (110007) was NOT necessary, uuid=" + master.getUuid());
-				continue;
-			}
-
-			// (3.3) 保存狀態資料(請求核心前)
-			String oldStatus = master.getStatus();
-			String oldError = master.getErrorCode();
-			master.setTranCode("067050");
-			master.setStatus("00");		// "00": 處理中
-			master.setTxStatus("80");	// "80": 請求核心資料中 (呼叫電文取 姓名 與 電話)
-			master.setErrorCode("");
-			this.dao.save(master);
 			this.dao.save(new EmailDetail(master));
+			log.info("6日未回覆 處理階段1 : " + master.toString());
 			
 			/*
 			EmailImage emailImage=new EmailImage(master);
@@ -356,6 +373,9 @@ public class Mvp110007Serv {
 			log.info("6日未回覆 處理階段7 處置完畢 ");
 			
 		}
+        } finally {
+        	this.scheduleRunning.set(false);
+        }
 	}
 
 	/**

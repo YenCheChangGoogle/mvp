@@ -156,7 +156,7 @@ public class Mvp110008Serv {
      */
     public boolean processOverdueRecord(EmailMaster master) {
     	
-    	log.info("█ █ █ █ █ 處理逾時3日未回覆 █ █ █ █ █");
+        log.info("● 處理逾時3日未回覆 : " + master.toString());
     	
         // 1. 原子性條件式更新 (CAS)：只有目前 status="00" 且 txStatus="13" 時才會更新成功。
         //    以此取代「先查詢再更新」的寫法，利用資料庫 row lock 保證同一筆UUID在同一瞬間
@@ -178,35 +178,36 @@ public class Mvp110008Serv {
             return false;
         }
 
-        // 2. 同步更新記憶體物件狀態 (需與上方實際寫入DB的值一致)，供建立明細檔使用
-        master.setFlag("1");
-        master.setTranCode("110008");
-        master.setStatus("00");
-        master.setTxStatus("01");
-        master.setErrorCode("");
+        // 2. 搶佔成功後，避免時間差問題，重新查詢一次 (與原邏輯一致：dao.uuid 取得最新完整資料，
+        //    確保 EMAILDTL 使用的是資料庫當下最新狀態，而非清單快照當時的舊資料)
+        EmailMaster current = this.dao.uuid(master.getUuid());
+        if (current == null) {
+            log.warn("check : (110008) entity was missing after update, uuid=" + master.getUuid());
+            return false;
+        }
 
         //明細檔紀錄 EMAILDTL
-        Exception ex = this.dao.save(new EmailDetail(master));
+        Exception ex = this.dao.save(new EmailDetail(current));
         if (ex != null) {
             log.warn("database: email detail error");
             return false;
         }
         
         /*
-        if(master.getChannel()==null) {
-            master.setChannel("-");
+        if(current.getChannel()==null) {
+            current.setChannel("-");
         }
-        if(master.getSubChannel()==null) {
-            master.setSubChannel("-");
+        if(current.getSubChannel()==null) {
+            current.setSubChannel("-");
         }
         //影像檔記錄 EMAILIMG
-        if(this.imageDao.save(new EmailImage(master))) {
+        if(this.imageDao.save(new EmailImage(current))) {
         	log.warn("database: email image error");
         	return false;
         }
         */
         
-        log.info("Mvp110008Serv : uuid='" + master.getUuid() + "'");
+        log.info("Mvp110008Serv : uuid='" + current.getUuid() + "'");
         return true;
     }
 
@@ -249,7 +250,7 @@ public class Mvp110008Serv {
         }
 
         try {
-            log.info("三日未回覆重發驗證信處理");
+            log.info("█ █ █ █ █ 三日未回覆重發驗證信處理 █ █ █ █ █");
 
             // 1. 是主服務器？
             if (! this.hostDao.isMain()) {
